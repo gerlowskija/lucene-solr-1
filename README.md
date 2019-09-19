@@ -38,6 +38,8 @@ comprehensive documentation, visit:
 
 ## Building Lucene/Solr
 
+Test PR change
+
 (You do not need to do this if you downloaded a pre-built package)
 
 Lucene and Solr are built using [Apache Ant](http://ant.apache.org/).  To build
