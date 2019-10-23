@@ -36,7 +36,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -281,7 +281,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
     private LeafCollector leafCollector;
 
-    public void setScorer(Scorable scorer) throws IOException {
+    public void setScorer(Scorer scorer) throws IOException {
       leafCollector.setScorer(scorer);
     }
 
@@ -369,7 +369,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
     private LeafCollector leafCollector;
 
-    public void setScorer(Scorable scorer) throws IOException {
+    public void setScorer(Scorer scorer) throws IOException {
       leafCollector.setScorer(scorer);
     }
 
