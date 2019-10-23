@@ -162,7 +162,6 @@ public class TermsQParserPlugin extends QParserPlugin {
   }
 
   private static class PostFilterDocValuesTermsQuery extends DocValuesTermsQuery implements PostFilter {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private String fieldName;
     private boolean cache = true;
@@ -201,9 +200,9 @@ public class TermsQParserPlugin extends QParserPlugin {
         System.out.println("Lookups:"+Long.toString(end-start));
 
         if (matchesAtLeastOneTerm) {
-          return new TermsCollector(fieldName, docValues, topLevelDocValuesBitSet, smallestOrd, lastOrdFound);
+          return new TermsCollector(docValues, topLevelDocValuesBitSet, smallestOrd, lastOrdFound);
         } else {
-          return new TermsCollector(fieldName, docValues, null, smallestOrd, lastOrdFound);
+          return new NoMatchesTermsCollector();
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -240,9 +239,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     public void setCache(boolean cache) { this.cache = cache; }
 
     @Override
-    public boolean getCache() {
-      return (getCost() > 99) ? false : cache;
-    }
+    public boolean getCache() { return cache; }
 
     @Override
     public int getCost() { return cost; }
@@ -257,8 +254,12 @@ public class TermsQParserPlugin extends QParserPlugin {
     public void setCacheSep(boolean cacheSep) { this.cacheSeparately = cacheSep; }
   }
 
+  private static class NoMatchesTermsCollector extends DelegatingCollector {
+    @Override
+    public void collect(int doc) throws IOException {}
+  }
+
   private static class TermsCollector extends DelegatingCollector {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private int docBase;
     private final long firstOrd;
@@ -266,13 +267,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     private SortedSetDocValues topLevelDocValues;
     private LongBitSet topLevelDocValueBitSet;
 
-    /**
-     *
-     * @param fieldName the name of the field collected over
-     * @param topLevelDocValues a top-level DocValues object
-     * @param topLevelDocValueBitSet a doc-values bitset where only ordinals matching terms in the query are set
-     */
-    public TermsCollector(String fieldName, SortedSetDocValues topLevelDocValues, LongBitSet topLevelDocValueBitSet, long firstOrd, long lastOrd) {
+    public TermsCollector(SortedSetDocValues topLevelDocValues, LongBitSet topLevelDocValueBitSet, long firstOrd, long lastOrd) {
       super();
 
       this.topLevelDocValues = topLevelDocValues;
@@ -293,14 +288,14 @@ public class TermsQParserPlugin extends QParserPlugin {
     }
 
     public void collect(int doc) throws IOException {
-      if (topLevelDocValueBitSet == null) return; // Collect nothing if no terms matched doc-values entries
       final int globalDoc = doc + docBase;
 
       if (topLevelDocValues.advanceExact(globalDoc)) {
         while (true) {
           final long ord = topLevelDocValues.nextOrd();
           if (ord == SortedSetDocValues.NO_MORE_ORDS) break;
-          if (ord < firstOrd || ord > lastOrd) continue;
+          if (ord > lastOrd) break;
+          if (ord < firstOrd) continue;
           if (topLevelDocValueBitSet.get(ord)) {
             leafCollector.collect(doc);
             break;
@@ -335,9 +330,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     public void setCache(boolean cache) { this.cache = cache; }
 
     @Override
-    public boolean getCache() {
-      return cache;
-    }
+    public boolean getCache() { return cache; }
 
     @Override
     public int getCost() { return cost; }
@@ -353,9 +346,7 @@ public class TermsQParserPlugin extends QParserPlugin {
   }
 
   private static class PerSegmentTermsCollector extends DelegatingCollector {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private int currentDocValuesPosition = -1;
     private SortedSetDocValues currentSegmentDocValues;
     private LongBitSet currentSegmentBitSet;
     private final String fieldName;
@@ -378,7 +369,6 @@ public class TermsQParserPlugin extends QParserPlugin {
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       currentSegmentDocValues = context.reader().getSortedSetDocValues(fieldName);
       currentSegmentBitSet = new LongBitSet(currentSegmentDocValues.getValueCount());
-      currentDocValuesPosition = -1;
 
       final PrefixCodedTerms.TermIterator iterator = termData.iterator();
       long lastOrdFound = 0;
@@ -393,11 +383,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     }
 
     public void collect(int doc) throws IOException {
-      if (currentDocValuesPosition < doc) {
-        currentDocValuesPosition = currentSegmentDocValues.advance(doc);
-      }
-
-      if (currentDocValuesPosition == doc) {
+      if (currentSegmentDocValues.advanceExact(doc)) {
         while (true) {
           final long ord = currentSegmentDocValues.nextOrd();
           if (ord == SortedSetDocValues.NO_MORE_ORDS) break;
