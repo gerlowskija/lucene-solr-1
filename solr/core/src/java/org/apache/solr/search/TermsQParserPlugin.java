@@ -167,12 +167,14 @@ public class TermsQParserPlugin extends QParserPlugin {
     private boolean cache = true;
     private boolean cacheSeparately = false;
     private int cost;
+    private final BytesRef[] terms;
 
 
     public PostFilterDocValuesTermsQuery(String field, BytesRef... terms) {
       super(field, terms);
       System.out.println("Post filter!!!");
       this.fieldName = field;
+      this.terms = terms;
     }
 
     @Override
@@ -183,7 +185,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         final SortedSetDocValues docValues = DocValues.getSortedSet(((SolrIndexSearcher)searcher).getSlowAtomicReader(), fieldName);
         final LongBitSet topLevelDocValuesBitSet = new LongBitSet(docValues.getValueCount());
         boolean matchesAtLeastOneTerm = false;
-        PrefixCodedTerms.TermIterator iterator = termData.iterator();
+        PrefixCodedTerms.TermIterator iterator = createPrefixCodedTerms().iterator();
         long lastOrdFound = 0;
         long smallestOrd = -1;
         for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
@@ -233,6 +235,22 @@ public class TermsQParserPlugin extends QParserPlugin {
       }
 
       return -(low + 1);  // key not found.
+    }
+
+    /*
+     * Workaround for the 'terms' field being private in our parent class DocValuesTermsQuery
+     */
+    private PrefixCodedTerms createPrefixCodedTerms() {
+      ArrayUtil.timSort(terms);
+      PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+      BytesRef previous = null;
+      for (BytesRef term : terms) {
+        if (term.equals(previous) == false) {
+          builder.add(fieldName, term);
+        }
+        previous = term;
+      }
+      return builder.finish();
     }
 
     @Override
@@ -311,6 +329,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     private String fieldName;
     private boolean cache = true;
     private boolean cacheSeparately = false;
+    private final BytesRef[] terms;
     private int cost;
 
 
@@ -318,12 +337,29 @@ public class TermsQParserPlugin extends QParserPlugin {
       super(field, terms);
       System.out.println("Post filter!!!");
       this.fieldName = field;
+      this.terms = terms;
     }
 
     @Override
     public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
       System.out.println("Running the post filter!!!");
-      return new PerSegmentTermsCollector(fieldName, termData);
+      return new PerSegmentTermsCollector(fieldName, createPrefixCodedTerms());
+    }
+
+    /*
+     * Workaround for the 'terms' field being private in our parent class DocValuesTermsQuery
+     */
+    private PrefixCodedTerms createPrefixCodedTerms() {
+      ArrayUtil.timSort(terms);
+      PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+      BytesRef previous = null;
+      for (BytesRef term : terms) {
+        if (term.equals(previous) == false) {
+          builder.add(fieldName, term);
+        }
+        previous = term;
+      }
+      return builder.finish();
     }
 
     @Override

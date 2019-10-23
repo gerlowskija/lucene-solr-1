@@ -97,7 +97,7 @@ public class DocValuesTermsQuery extends Query implements Accountable {
   private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesTermsQuery.class);
 
   private final String field;
-  protected final PrefixCodedTerms termData;
+  private final PrefixCodedTerms termData;
   private final int termDataHashCode; // cached hashcode of termData
 
   public DocValuesTermsQuery(String field, Collection<BytesRef> terms) {
