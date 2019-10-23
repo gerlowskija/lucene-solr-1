@@ -76,7 +76,18 @@ public abstract class SortedSetDocValues extends DocValuesIterator {
    *  @param key Key to look up
    **/
   public long lookupTerm(BytesRef key) throws IOException {
-    long low = 0;
+    return lookupTerm(key, 0L);
+  }
+
+  /** If {@code key} exists, returns its ordinal, else
+   *  returns {@code -insertionPoint-1}, like {@code
+   *  Arrays.binarySearch}.
+   *
+   *  @param key Key to look up
+   *  @param lowerSearchBound ordinal to start the lookup
+   **/
+  public long lookupTerm(BytesRef key, long lowerSearchBound) throws IOException {
+    long low = lowerSearchBound;
     long high = getValueCount()-1;
 
     while (low <= high) {
