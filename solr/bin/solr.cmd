@@ -16,6 +16,8 @@
 
 @echo off
 
+Here's a test line I put in.
+
 @REM Make sure to keep line endings as CRLF for .cmd files
 
 IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
