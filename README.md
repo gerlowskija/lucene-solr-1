@@ -152,3 +152,5 @@ contributing.
 - [Lucene Issue Tracker](https://issues.apache.org/jira/browse/LUCENE)
 - [Solr Issue Tracker](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr` and `#solr-dev` on freenode.net
+
+asdfasdfasdf
