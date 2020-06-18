@@ -238,6 +238,7 @@
    <searchComponent name="facet"     class="org.apache.solr.handler.component.FacetComponent" />
    <searchComponent name="mlt"       class="org.apache.solr.handler.component.MoreLikeThisComponent" />
    <searchComponent name="highlight" class="org.apache.solr.handler.component.HighlightComponent" />
+   <searchComponent name="track"     class="org.apache.solr.handler.component.TrackComponent" />
    <searchComponent name="debug"     class="org.apache.solr.handler.component.DebugComponent" />
   
    If you register a searchComponent to one of the standard names, that will be used instead.
@@ -256,6 +257,7 @@
       <str>facet</str>
       <str>mlt</str>
       <str>highlight</str>
+      <str>track</str>
       <str>debug</str>
     </arr>
     

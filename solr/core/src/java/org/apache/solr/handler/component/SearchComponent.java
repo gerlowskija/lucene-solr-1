@@ -134,6 +134,7 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
     map.put(FacetModule.COMPONENT_NAME, FacetModule.class);
     map.put(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class);
     map.put(StatsComponent.COMPONENT_NAME, StatsComponent.class);
+    map.put(TrackComponent.COMPONENT_NAME, TrackComponent.class);
     map.put(DebugComponent.COMPONENT_NAME, DebugComponent.class);
     map.put(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class);
     map.put(ExpandComponent.COMPONENT_NAME, ExpandComponent.class);

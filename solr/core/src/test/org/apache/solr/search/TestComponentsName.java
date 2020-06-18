@@ -22,6 +22,7 @@ import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.MoreLikeThisComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.StatsComponent;
+import org.apache.solr.handler.component.TrackComponent;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -63,6 +64,7 @@ public class TestComponentsName extends SolrTestCaseJ4{
         "/response/lst[@name='debug']/lst[@name='timing']/lst[@name='prepare']/lst[@name='" + FacetComponent.COMPONENT_NAME + "']",
         "/response/lst[@name='debug']/lst[@name='timing']/lst[@name='prepare']/lst[@name='" + MoreLikeThisComponent.COMPONENT_NAME + "']",
         "/response/lst[@name='debug']/lst[@name='timing']/lst[@name='prepare']/lst[@name='" + StatsComponent.COMPONENT_NAME + "']",
+        "/response/lst[@name='debug']/lst[@name='timing']/lst[@name='prepare']/lst[@name='" + TrackComponent.COMPONENT_NAME + "']",
         "/response/lst[@name='debug']/lst[@name='timing']/lst[@name='prepare']/lst[@name='" + DebugComponent.COMPONENT_NAME + "']",
         "/response/lst[@name='debug']/lst[@name='timing']/lst[@name='prepare']/lst[@name='component2']");
   }

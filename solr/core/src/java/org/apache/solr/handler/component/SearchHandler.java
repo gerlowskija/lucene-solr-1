@@ -83,6 +83,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     names.add(MoreLikeThisComponent.COMPONENT_NAME);
     names.add(HighlightComponent.COMPONENT_NAME);
     names.add(StatsComponent.COMPONENT_NAME);
+    names.add(TrackComponent.COMPONENT_NAME);
     names.add(DebugComponent.COMPONENT_NAME);
     names.add(ExpandComponent.COMPONENT_NAME);
     names.add(TermsComponent.COMPONENT_NAME);

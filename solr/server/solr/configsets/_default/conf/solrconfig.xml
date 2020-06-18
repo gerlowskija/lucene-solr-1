@@ -773,6 +773,7 @@
        <searchComponent name="mlt"       class="solr.MoreLikeThisComponent" />
        <searchComponent name="highlight" class="solr.HighlightComponent" />
        <searchComponent name="stats"     class="solr.StatsComponent" />
+       <searchComponent name="track"     class="solr.TrackComponent" />
        <searchComponent name="debug"     class="solr.DebugComponent" />
 
        Default configuration in a requestHandler would look like:
@@ -783,6 +784,7 @@
          <str>mlt</str>
          <str>highlight</str>
          <str>stats</str>
+         <str>track</str>
          <str>debug</str>
        </arr>
 
