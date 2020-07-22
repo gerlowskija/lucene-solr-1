@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.SocketException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -170,7 +172,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
    * Opens a connection and sends everything...
    */
   class Runner implements Runnable {
-
+    int requestCount = 0;
     @Override
     public void run() {
       log.debug("starting runner: {}", this);
@@ -233,6 +235,13 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 if (!out.belongToThisStream(req, upd.getCollection())) {
                   queue.add(upd); // Request has different params or destination core/collection, return to queue
                   break;
+                }
+                if (StringUtils.equals(System.getProperty("causeDIHIOerror"), "true") && requestCount %2 == 0) {
+                  requestCount++;
+                  log.warn("JEGERLOW Throwing a fake IO exception on this CUSC2 request");
+                  throw new SocketException("Fake socket-write-error");
+                } else {
+                  log.warn("JEGERLOW: Allowing this CUSC2 request through.");
                 }
                 client.send(out, upd.getRequest(), upd.getCollection());
                 out.flush();

@@ -543,6 +543,7 @@ public class JdbcDataSource extends
 
   @Override
   public void close() {
+    log.warn("JEGERLOW: In JdbcDataSource.close()");
     if (resultSetIterator != null) {
       resultSetIterator.close();
     }
