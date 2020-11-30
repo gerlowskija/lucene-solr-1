@@ -983,6 +983,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String location;
     protected Optional<String> commitName = Optional.empty();
     protected Optional<String> indexBackupStrategy = Optional.empty();
+    protected boolean incremental = false;
+    protected Optional<Integer> maxNumBackupPoints = Optional.empty();
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1026,6 +1028,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    public Backup setIncremental(boolean incremental) {
+      this.incremental = incremental;
+      return this;
+    }
+
+    public Backup setMaxNumberBackupPoints(int maxNumBackupPoints) {
+      this.maxNumBackupPoints = Optional.of(maxNumBackupPoints);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1041,6 +1053,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (indexBackupStrategy.isPresent()) {
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
+      if (maxNumBackupPoints.isPresent()) {
+        params.set(CoreAdminParams.MAX_NUM_BACKUP, maxNumBackupPoints.get());
+      }
+      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;
     }
 
@@ -1065,6 +1081,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
+    protected Integer backupId;
 
     public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
@@ -1126,6 +1143,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
     public Restore setProperties(Properties properties) { this.properties = properties; return this;}
 
+    public Restore setBackupId(int backupId) {
+      this.backupId = backupId;
+      return this;
+    }
+
     // TODO support rule, snitch
 
     @Override
@@ -1162,6 +1184,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (createNodeSetShuffle.isPresent()) {
         params.set(CREATE_NODE_SET_SHUFFLE_PARAM, createNodeSetShuffle.get());
+      }
+      if (backupId != null) {
+        params.set(CoreAdminParams.BACKUP_ID, backupId);
       }
 
       return params;
@@ -2659,6 +2684,87 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class List extends CollectionAdminRequest<CollectionAdminResponse> {
     public List () {
       super(CollectionAction.LIST);
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
+  // DELETEBACKUP request
+  public static class DeleteBackup extends CollectionAdminRequest<CollectionAdminResponse> {
+    private String backupName;
+    private String backupRepo;
+    private String backupLocation;
+    private Boolean purge;
+    private Integer backupId;
+    private Integer keepLastNumberOfBackups;
+
+    public DeleteBackup (String backupRepo, String backupLocation, String backupName) {
+      super(CollectionAction.DELETEBACKUP);
+      this.backupName = backupName;
+      this.backupRepo = backupRepo;
+      this.backupLocation = backupLocation;
+    }
+
+    public DeleteBackup deleteBackupId(int backupId) {
+      this.backupId = backupId;
+      return this;
+    }
+
+    public DeleteBackup keepLastNumberOfBackups(int num) {
+      this.keepLastNumberOfBackups = num;
+      return this;
+    }
+
+    public DeleteBackup purgeBackups(boolean purge) {
+      this.purge = purge;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.NAME, backupName);
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupLocation);
+      params.set(CoreAdminParams.BACKUP_REPOSITORY, backupRepo);
+      if (backupId != null)
+        params.set(CoreAdminParams.BACKUP_ID, backupId);
+      if (keepLastNumberOfBackups != null)
+        params.set(CoreAdminParams.MAX_NUM_BACKUP, keepLastNumberOfBackups);
+      if (purge != null)
+        params.set(CoreAdminParams.BACKUP_PURGE_UNUSED, purge);
+      return params;
+    }
+
+    @Override
+    protected CollectionAdminResponse createResponse(SolrClient client) {
+      return new CollectionAdminResponse();
+    }
+  }
+
+  // LISTBACKUP request
+  public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
+    private String backupName;
+    private String backupRepo;
+    private String backupLocation;
+
+    public ListBackup(String backupRepo, String backupLocation, String backupName) {
+      super(CollectionAction.LISTBACKUP);
+      this.backupName = backupName;
+      this.backupRepo = backupRepo;
+      this.backupLocation = backupLocation;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      params.set(CoreAdminParams.NAME, backupName);
+      params.set(CoreAdminParams.BACKUP_LOCATION, backupLocation);
+      params.set(CoreAdminParams.BACKUP_REPOSITORY, backupRepo);
+
+      return params;
     }
 
     @Override
