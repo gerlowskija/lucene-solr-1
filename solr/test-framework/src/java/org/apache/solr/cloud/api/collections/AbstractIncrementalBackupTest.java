@@ -66,6 +66,7 @@ import org.apache.solr.core.TrackingBackupRepository;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.Checksum;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -422,11 +423,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         }
 
         ShardBackupMetadata getLastShardBackupId(String shardName) throws IOException {
-            String metaFile = BackupProperties
+            ShardBackupId shardBackupId = BackupProperties
                     .readFromLatest(repository, backupURI)
                     .flatMap(bp -> bp.getShardBackupIdFor(shardName))
                     .get();
-            return ShardBackupMetadata.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupIdDir(), metaFile);
+            return ShardBackupMetadata.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupMetadataDir(), shardBackupId.getIdAsString());
         }
 
         private void assertIndexInputEquals(IndexInput in1, IndexInput in2) throws IOException {

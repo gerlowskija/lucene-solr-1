@@ -27,6 +27,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.AggregateBackupStats;
 import org.apache.solr.core.backup.BackupProperties;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -35,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -85,7 +87,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
     @SuppressWarnings({"unchecked"})
     /**
-     * Clean up {@code backupPath} by removing all indexFiles, shardBackupIds, backupIds that are
+     * Clean up {@code backupPath} by removing all index files, shard-metadata files, and backup property files that are
      * unreachable, uncompleted or corrupted.
      */
     void purge(BackupRepository repository, URI backupPath, @SuppressWarnings({"rawtypes"}) NamedList result) throws IOException {
@@ -94,13 +96,13 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
         BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
         repository.delete(backupPaths.getIndexDir(), purgeGraph.indexFileDeletes, true);
-        repository.delete(backupPaths.getShardBackupIdDir(), purgeGraph.shardBackupIdDeletes, true);
+        repository.delete(backupPaths.getShardBackupMetadataDir(), purgeGraph.shardBackupMetadataDeletes, true);
         repository.delete(backupPath, purgeGraph.backupIdDeletes, true);
 
         @SuppressWarnings({"rawtypes"})
         NamedList details = new NamedList();
         details.add("numBackupIds", purgeGraph.backupIdDeletes.size());
-        details.add("numShardBackupIds", purgeGraph.shardBackupIdDeletes.size());
+        details.add("numShardBackupIds", purgeGraph.shardBackupMetadataDeletes.size());
         details.add("numIndexFiles", purgeGraph.indexFileDeletes.size());
         result.add("deleted", details);
     }
@@ -125,23 +127,23 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                          Set<BackupId> backupIdsDeletes,
                          @SuppressWarnings({"rawtypes"}) NamedList results) throws IOException {
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPath);
-        URI shardBackupIdDir = incBackupFiles.getShardBackupIdDir();
+        URI shardBackupMetadataDir = incBackupFiles.getShardBackupMetadataDir();
 
         Set<String> referencedIndexFiles = new HashSet<>();
-        List<Pair<BackupId,String>> shardBackupIdDeletes = new ArrayList<>();
+        List<ShardBackupId> shardBackupIdFileDeletes = new ArrayList<>();
 
 
-        String[] shardBackupIdFiles = repository.listAllOrEmpty(shardBackupIdDir);
-        for (String shardBackupIdFile : shardBackupIdFiles) {
-            Optional<BackupId> backupId = BackupProperties.backupIdOfShardBackupId(shardBackupIdFile);
-            if (!backupId.isPresent())
-                continue;
+        // JEGERLOW TODO: When I add in the json suffix, shore up the file/id distinction that's blurred slightly here.
+        List<ShardBackupId> shardBackupMetadataFiles = Arrays.stream(repository.listAllOrEmpty(shardBackupMetadataDir))
+                .map(sbi -> ShardBackupId.from(sbi))
+                .collect(Collectors.toList());
+        for (ShardBackupId shardBackupId : shardBackupMetadataFiles) {
+            final BackupId backupId = shardBackupId.getContainingBackupId();
 
-            if (backupIdsDeletes.contains(backupId.get())) {
-                Pair<BackupId, String> pair = new Pair<>(backupId.get(), shardBackupIdFile);
-                shardBackupIdDeletes.add(pair);
+            if (backupIdsDeletes.contains(backupId)) {
+                shardBackupIdFileDeletes.add(shardBackupId);
             } else {
-                ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupIdDir, shardBackupIdFile);
+                ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupMetadataDir, shardBackupId.getIdAsString());
                 if (shardBackupMetadata != null)
                     referencedIndexFiles.addAll(shardBackupMetadata.listUniqueFileNames());
             }
@@ -150,9 +152,9 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
         Map<BackupId, AggregateBackupStats> backupIdToCollectionBackupPoint = new HashMap<>();
         List<String> unusedFiles = new ArrayList<>();
-        for (Pair<BackupId, String> entry : shardBackupIdDeletes) {
-            BackupId backupId = entry.first();
-            ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupIdDir, entry.second());
+        for (ShardBackupId shardBackupIdToDelete : shardBackupIdFileDeletes) {
+            BackupId backupId = shardBackupIdToDelete.getContainingBackupId();
+            ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupMetadataDir, shardBackupIdToDelete.getIdAsString());
             if (shardBackupMetadata == null)
                 continue;
 
@@ -167,8 +169,8 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
             }
         }
 
-        repository.delete(incBackupFiles.getShardBackupIdDir(),
-                shardBackupIdDeletes.stream().map(Pair::second).collect(Collectors.toList()), true);
+        repository.delete(incBackupFiles.getShardBackupMetadataDir(),
+                shardBackupIdFileDeletes.stream().map(ShardBackupId::getIdAsString).collect(Collectors.toList()), true);
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
@@ -228,12 +230,12 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
     final static class PurgeGraph {
         // graph
         Map<String, Node> backupIdNodeMap = new HashMap<>();
-        Map<String, Node> shardBackupIdNodeMap = new HashMap<>();
+        Map<String, Node> shardBackupMetadataNodeMap = new HashMap<>();
         Map<String, Node> indexFileNodeMap = new HashMap<>();
 
         // delete queues
         List<String> backupIdDeletes = new ArrayList<>();
-        List<String> shardBackupIdDeletes = new ArrayList<>();
+        List<String> shardBackupMetadataDeletes = new ArrayList<>();
         List<String> indexFileDeletes = new ArrayList<>();
 
         public void build(BackupRepository repository, URI backupPath) throws IOException {
@@ -244,18 +246,18 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
         public void findDeletableNodes(BackupRepository repository, BackupFilePaths backupPaths) {
             // mark nodes as existing
-            visitExistingNodes(repository.listAllOrEmpty(backupPaths.getShardBackupIdDir()),
-                    shardBackupIdNodeMap, shardBackupIdDeletes);
+            visitExistingNodes(repository.listAllOrEmpty(backupPaths.getShardBackupMetadataDir()),
+                    shardBackupMetadataNodeMap, shardBackupMetadataDeletes);
             // this may be a long running commands
             visitExistingNodes(repository.listAllOrEmpty(backupPaths.getIndexDir()),
                     indexFileNodeMap, indexFileDeletes);
 
             // for nodes which are not existing, propagate that information to other nodes
-            shardBackupIdNodeMap.values().forEach(Node::propagateNotExisting);
+            shardBackupMetadataNodeMap.values().forEach(Node::propagateNotExisting);
             indexFileNodeMap.values().forEach(Node::propagateNotExisting);
 
             addDeleteNodesToQueue(backupIdNodeMap, backupIdDeletes);
-            addDeleteNodesToQueue(shardBackupIdNodeMap, shardBackupIdDeletes);
+            addDeleteNodesToQueue(shardBackupMetadataNodeMap, shardBackupMetadataDeletes);
             addDeleteNodesToQueue(indexFileNodeMap, indexFileDeletes);
         }
 
@@ -292,7 +294,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         Node getShardBackupIdNode(String shardBackupId) {
-            return shardBackupIdNodeMap.computeIfAbsent(shardBackupId, s -> new Node());
+            return shardBackupMetadataNodeMap.computeIfAbsent(shardBackupId, s -> new Node());
         }
 
         Node getIndexFileNode(String indexFile) {
@@ -311,17 +313,17 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                         BackupFilePaths.getBackupPropsName(backupId));
 
                 Node backupIdNode = getBackupIdNode(BackupFilePaths.getBackupPropsName(backupId));
-                for (String shardBackupIdFile : backupProps.getAllShardBackupIdFiles()) {
-                    Node shardBackupIdNode = getShardBackupIdNode(shardBackupIdFile);
-                    addEdge(backupIdNode, shardBackupIdNode);
+                for (String shardBackupMetadataFile : backupProps.getAllShardBackupMetadataFiles()) {
+                    Node shardBackupMetadataNode = getShardBackupIdNode(shardBackupMetadataFile);
+                    addEdge(backupIdNode, shardBackupMetadataNode);
 
-                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath, shardBackupIdFile);
+                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath, shardBackupMetadataFile);
                     if (shardBackupMetadata == null)
                         continue;
 
                     for (String indexFile : shardBackupMetadata.listUniqueFileNames()) {
                         Node indexFileNode = getIndexFileNode(indexFile);
-                        addEdge(indexFileNode, shardBackupIdNode);
+                        addEdge(indexFileNode, shardBackupMetadataNode);
                     }
                 }
             }

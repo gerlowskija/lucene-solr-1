@@ -123,12 +123,12 @@ public abstract class CoreAdminParams
   public static final String BACKUP_LOCATION = "location";
 
   /**
-   * A parameter to specify the name of previous shardBackupId.
+   * The ID of the shard-backup prior to the latest one (indicated by {@link #SHARD_BACKUP_ID}
    */
   public static final String PREV_SHARD_BACKUP_ID = "prevShardBackupId";
 
   /**
-   * A parameter to specify the name of shardBackupId which will be created
+   * The ID of the shard-backup in question
    */
   public static final String SHARD_BACKUP_ID = "shardBackupId";
 
@@ -143,7 +143,7 @@ public abstract class CoreAdminParams
   public static final String BACKUP_ID = "backupId";
 
   /**
-   * Purging/deleting all indexFiles, shardBackupIds, backupIds that are unreachable, uncompleted or corrupted.
+   * Purging/deleting all index files, shard-backup metadata files, backup property files that are unreachable, uncompleted or corrupted.
    */
   public static final String PURGE_BACKUP = "purge";
 

@@ -51,22 +51,22 @@ public class IncrementalShardBackup {
     private BackupFilePaths incBackupFiles;
     private BackupRepository backupRepo;
 
-    private String prevShardBackupIdFile;
-    private String shardBackupIdFile;
+    private String prevShardBackupMetadataFile;
+    private String shardBackupMetadataFile;
 
     /**
      *
-     * @param prevShardBackupIdFile previous ShardBackupMetadata file which will be used for skipping
+     * @param prevShardBackupMetadataFile previous ShardBackupMetadata file which will be used for skipping
      *                             uploading index files already present in this file.
-     * @param shardBackupIdFile file where all meta data of this backup will be stored to.
+     * @param shardBackupMetadataFile file where all meta data of this backup will be stored to.
      */
     public IncrementalShardBackup(BackupRepository backupRepo, SolrCore solrCore, BackupFilePaths incBackupFiles,
-                                  String prevShardBackupIdFile, String shardBackupIdFile) {
+                                  String prevShardBackupMetadataFile, String shardBackupMetadataFile) {
         this.backupRepo = backupRepo;
         this.solrCore = solrCore;
         this.incBackupFiles = incBackupFiles;
-        this.prevShardBackupIdFile = prevShardBackupIdFile;
-        this.shardBackupIdFile = shardBackupIdFile;
+        this.prevShardBackupMetadataFile = prevShardBackupMetadataFile;
+        this.shardBackupMetadataFile = shardBackupMetadataFile;
     }
 
     @SuppressWarnings({"rawtypes"})
@@ -109,7 +109,7 @@ public class IncrementalShardBackup {
     protected NamedList backup(final IndexCommit indexCommit) throws Exception {
         assert indexCommit != null;
         URI backupLocation = incBackupFiles.getBackupLocation();
-        log.info("Creating backup snapshot at {} shardBackupIdFile:{}", backupLocation, shardBackupIdFile);
+        log.info("Creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupMetadataFile);
         NamedList<Object> details = new NamedList<>();
         details.add("startTime", Instant.now().toString());
 
@@ -132,16 +132,16 @@ public class IncrementalShardBackup {
         }
 
         details.add("endTime", Instant.now().toString());
-        details.add("shardBackupId", shardBackupIdFile);
-        log.info("Done creating backup snapshot at {} shardBackupIdFile:{}", backupLocation, shardBackupIdFile);
+        details.add("shardBackupId", shardBackupMetadataFile);
+        log.info("Done creating backup snapshot at {} shardBackupMetadataFile:{}", backupLocation, shardBackupMetadataFile);
         return details;
     }
 
     private ShardBackupMetadata getPrevBackupPoint() throws IOException {
-        if (prevShardBackupIdFile == null) {
+        if (prevShardBackupMetadataFile == null) {
             return ShardBackupMetadata.empty();
         }
-        return ShardBackupMetadata.from(backupRepo, incBackupFiles.getShardBackupIdDir(), prevShardBackupIdFile);
+        return ShardBackupMetadata.from(backupRepo, incBackupFiles.getShardBackupMetadataDir(), prevShardBackupMetadataFile);
     }
 
     private BackupStats incrementalCopy(Collection<String> indexFiles, Directory dir) throws IOException {
@@ -171,7 +171,7 @@ public class IncrementalShardBackup {
             backupStats.uploadedFile(originalFileCS);
         }
 
-        currentBackupPoint.store(backupRepo, incBackupFiles.getShardBackupIdDir(), shardBackupIdFile);
+        currentBackupPoint.store(backupRepo, incBackupFiles.getShardBackupMetadataDir(), shardBackupMetadataFile);
         return backupStats;
     }
 

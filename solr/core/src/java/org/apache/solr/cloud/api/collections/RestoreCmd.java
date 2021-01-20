@@ -42,6 +42,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
@@ -110,9 +111,9 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     for (Slice slice : restoreCollection.getSlices()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
-      Optional<String> shardBackupId = backupProperties.getShardBackupIdFor(slice.getName());
+      Optional<ShardBackupId> shardBackupId = backupProperties.getShardBackupIdFor(slice.getName());
       if (shardBackupId.isPresent()) {
-        params.set(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId.get());
+        params.set(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId.get().getIdAsString());
       } else {
         params.set(NAME, "snapshot." + slice.getName());
       }

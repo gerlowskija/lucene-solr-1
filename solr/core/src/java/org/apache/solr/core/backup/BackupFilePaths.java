@@ -60,7 +60,7 @@ public class BackupFilePaths {
      *
      * Only valid for incremental backups.
      */
-    public URI getShardBackupIdDir() {
+    public URI getShardBackupMetadataDir() {
         return repository.resolve(backupLoc, "shard_backup_ids");
     }
 
@@ -82,9 +82,9 @@ public class BackupFilePaths {
             repository.createDirectory(indexDir);
         }
 
-        URI shardBackupIdDir = getShardBackupIdDir();
-        if (!repository.exists(shardBackupIdDir)) {
-            repository.createDirectory(shardBackupIdDir);
+        URI shardBackupMetadataDir = getShardBackupMetadataDir();
+        if (!repository.exists(shardBackupMetadataDir)) {
+            repository.createDirectory(shardBackupMetadataDir);
         }
     }
 

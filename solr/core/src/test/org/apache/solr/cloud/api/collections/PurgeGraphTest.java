@@ -46,14 +46,14 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         BackupFilePaths paths = mock(BackupFilePaths.class);
         when(paths.getBackupLocation()).thenReturn(new URI("/temp"));
         when(paths.getIndexDir()).thenReturn(new URI("/temp/index"));
-        when(paths.getShardBackupIdDir()).thenReturn(new URI("/temp/backup_point"));
+        when(paths.getShardBackupMetadataDir()).thenReturn(new URI("/temp/backup_point"));
 
         PurgeGraph purgeGraph = new PurgeGraph();
         buildCompleteGraph(repository, paths, purgeGraph);
         purgeGraph.findDeletableNodes(repository, paths);
 
         assertEquals(0, purgeGraph.backupIdDeletes.size());
-        assertEquals(0, purgeGraph.shardBackupIdDeletes.size());
+        assertEquals(0, purgeGraph.shardBackupMetadataDeletes.size());
         assertEquals(0, purgeGraph.indexFileDeletes.size());
 
         testDeleteUnreferencedFiles(repository, paths, purgeGraph);
@@ -74,7 +74,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         purgeGraph.findDeletableNodes(repository, paths);
 
         assertEquals(3, purgeGraph.backupIdDeletes.size());
-        assertEquals(shardBackupIds.length, purgeGraph.shardBackupIdDeletes.size());
+        assertEquals(shardBackupIds.length, purgeGraph.shardBackupMetadataDeletes.size());
         assertEquals(purgeGraph.indexFileNodeMap.size(), purgeGraph.indexFileDeletes.size() + 1);
 
         purgeGraph = new PurgeGraph();
@@ -89,7 +89,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         purgeGraph.findDeletableNodes(repository, paths);
 
         assertEquals(2, purgeGraph.backupIdDeletes.size());
-        assertEquals(4, purgeGraph.shardBackupIdDeletes.size());
+        assertEquals(4, purgeGraph.shardBackupMetadataDeletes.size());
         assertTrue(purgeGraph.indexFileDeletes.contains("s1_100"));
         assertFalse(purgeGraph.indexFileDeletes.contains("s1_101"));
     }
@@ -97,29 +97,29 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     private void testMissingBackupPointFiles(BackupRepository repository, BackupFilePaths paths) throws IOException {
         PurgeGraph purgeGraph = new PurgeGraph();
         buildCompleteGraph(repository, paths, purgeGraph);
-        when(repository.listAllOrEmpty(same(paths.getShardBackupIdDir()))).thenAnswer((Answer<String[]>)
+        when(repository.listAllOrEmpty(same(paths.getShardBackupMetadataDir()))).thenAnswer((Answer<String[]>)
                 invocationOnMock -> Arrays.copyOfRange(shardBackupIds, 1, shardBackupIds.length)
         );
         purgeGraph.findDeletableNodes(repository, paths);
 
         assertEquals(1, purgeGraph.backupIdDeletes.size());
         assertEquals("b1", purgeGraph.backupIdDeletes.get(0));
-        assertEquals(1, purgeGraph.shardBackupIdDeletes.size());
-        assertEquals("b1_s2", purgeGraph.shardBackupIdDeletes.get(0));
+        assertEquals(1, purgeGraph.shardBackupMetadataDeletes.size());
+        assertEquals("b1_s2", purgeGraph.shardBackupMetadataDeletes.get(0));
         assertTrue(purgeGraph.indexFileDeletes.contains("s1_100"));
         assertFalse(purgeGraph.indexFileDeletes.contains("s1_101"));
 
         purgeGraph = new PurgeGraph();
         buildCompleteGraph(repository, paths, purgeGraph);
-        when(repository.listAllOrEmpty(same(paths.getShardBackupIdDir()))).thenAnswer((Answer<String[]>)
+        when(repository.listAllOrEmpty(same(paths.getShardBackupMetadataDir()))).thenAnswer((Answer<String[]>)
                 invocationOnMock -> new String[]{"b1_s1", "b2_s1", "b3_s1", "b3_s2", "b3_s3"}
         );
         purgeGraph.findDeletableNodes(repository, paths);
 
         assertEquals(2, purgeGraph.backupIdDeletes.size());
         assertTrue(purgeGraph.backupIdDeletes.containsAll(Arrays.asList("b1", "b2")));
-        assertEquals(2, purgeGraph.shardBackupIdDeletes.size());
-        assertTrue(purgeGraph.shardBackupIdDeletes.containsAll(Arrays.asList("b2_s1", "b1_s1")));
+        assertEquals(2, purgeGraph.shardBackupMetadataDeletes.size());
+        assertTrue(purgeGraph.shardBackupMetadataDeletes.containsAll(Arrays.asList("b2_s1", "b1_s1")));
         assertTrue(purgeGraph.indexFileDeletes.containsAll(Arrays.asList("s1_100", "s1_101")));
         assertFalse(purgeGraph.indexFileDeletes.contains("s1_102"));
     }
@@ -127,14 +127,14 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     private void testDeleteUnreferencedFiles(BackupRepository repository, BackupFilePaths paths,
                                              PurgeGraph purgeGraph) throws IOException {
         buildCompleteGraph(repository, paths, purgeGraph);
-        String[] unRefBackupPoints = addUnRefFiles(repository, "b4_s", paths.getShardBackupIdDir());
+        String[] unRefBackupPoints = addUnRefFiles(repository, "b4_s", paths.getShardBackupMetadataDir());
         String[] unRefIndexFiles = addUnRefFiles(repository, "s4_", paths.getIndexDir());
 
         purgeGraph.findDeletableNodes(repository, paths);
 
         assertEquals(0, purgeGraph.backupIdDeletes.size());
-        assertEquals(unRefBackupPoints.length, purgeGraph.shardBackupIdDeletes.size());
-        assertTrue(purgeGraph.shardBackupIdDeletes.containsAll(Arrays.asList(unRefBackupPoints)));
+        assertEquals(unRefBackupPoints.length, purgeGraph.shardBackupMetadataDeletes.size());
+        assertTrue(purgeGraph.shardBackupMetadataDeletes.containsAll(Arrays.asList(unRefBackupPoints)));
         assertEquals(unRefIndexFiles.length, purgeGraph.indexFileDeletes.size());
         assertTrue(purgeGraph.indexFileDeletes.containsAll(Arrays.asList(unRefIndexFiles)));
     }
@@ -144,16 +144,16 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         for (int i = 0; i < unRefBackupPoints.length; i++) {
             unRefBackupPoints[i] = prefix + (100 + i);
         }
-        String[] shardBackupIds = repository.listAllOrEmpty(dir);
+        String[] shardBackupMetadataFiles = repository.listAllOrEmpty(dir);
         when(repository.listAllOrEmpty(same(dir)))
                 .thenAnswer((Answer<String[]>) invocation
-                        -> ObjectArrays.concat(shardBackupIds, unRefBackupPoints, String.class));
+                        -> ObjectArrays.concat(shardBackupMetadataFiles, unRefBackupPoints, String.class));
         return unRefBackupPoints;
     }
 
     private void buildCompleteGraph(BackupRepository repository, BackupFilePaths paths,
                                     PurgeGraph purgeGraph) throws IOException {
-        when(repository.listAllOrEmpty(same(paths.getShardBackupIdDir()))).thenAnswer((Answer<String[]>) invocationOnMock -> shardBackupIds);
+        when(repository.listAllOrEmpty(same(paths.getShardBackupMetadataDir()))).thenAnswer((Answer<String[]>) invocationOnMock -> shardBackupIds);
         //logical
 
         for (String shardBackupId : shardBackupIds) {

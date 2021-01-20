@@ -46,6 +46,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
@@ -210,11 +211,11 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       ModifiableSolrParams params = coreBackupParams(backupPath, repoName, slice, coreName);
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, true);
       previousProps.flatMap(bp -> bp.getShardBackupIdFor(slice.getName()))
-              .ifPresent(prevBackupPoint -> params.set(CoreAdminParams.PREV_SHARD_BACKUP_ID, prevBackupPoint));
+              .ifPresent(prevBackupPoint -> params.set(CoreAdminParams.PREV_SHARD_BACKUP_ID, prevBackupPoint.getIdAsString()));
 
-      String shardBackupId = backupProperties.putAndGetShardBackupIdFor(slice.getName(),
+      ShardBackupId shardBackupId = backupProperties.putAndGetShardBackupIdFor(slice.getName(),
               backupManager.getBackupId().getId());
-      params.set(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId);
+      params.set(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId.getIdAsString());
 
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
       log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);

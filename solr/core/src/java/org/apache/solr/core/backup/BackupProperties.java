@@ -88,7 +88,7 @@ public class BackupProperties {
         }
     }
 
-    public List<String> getAllShardBackupIdFiles() {
+    public List<String> getAllShardBackupMetadataFiles() {
         return properties.entrySet()
                 .stream()
                 .filter(entry -> entry.getKey().toString().endsWith(".md"))
@@ -101,30 +101,18 @@ public class BackupProperties {
         indexFileCount += numFiles;
     }
 
-    public Optional<String> getShardBackupIdFor(String shardName) {
+    public Optional<ShardBackupId> getShardBackupIdFor(String shardName) {
         String key = getKeyForShardBackupId(shardName);
         if (properties.containsKey(key)) {
-            return Optional.of(properties.getProperty(key));
+            return Optional.of(ShardBackupId.from(properties.getProperty(key)));
         }
         return Optional.empty();
     }
 
-    public String putAndGetShardBackupIdFor(String shardName, int backupId) {
-        String shardBackupId = String.format(Locale.ROOT, "md_%s_id_%d", shardName, backupId);
-        properties.put(getKeyForShardBackupId(shardName), shardBackupId);
+    public ShardBackupId putAndGetShardBackupIdFor(String shardName, int backupId) {
+        final ShardBackupId shardBackupId = new ShardBackupId(shardName, new BackupId(backupId));
+        properties.put(getKeyForShardBackupId(shardName), shardBackupId.getIdAsString());
         return shardBackupId;
-    }
-
-    public static Optional<BackupId> backupIdOfShardBackupId(String shardBackupIdName) {
-        if (!shardBackupIdName.startsWith("md")) {
-            return Optional.empty();
-        }
-        try {
-            int id = Integer.parseInt(shardBackupIdName.substring(shardBackupIdName.lastIndexOf("_") + 1));
-            return Optional.of(new BackupId(id));
-        } catch (NumberFormatException | IndexOutOfBoundsException e) {
-            return Optional.empty();
-        }
     }
 
     private String getKeyForShardBackupId(String shardName) {
