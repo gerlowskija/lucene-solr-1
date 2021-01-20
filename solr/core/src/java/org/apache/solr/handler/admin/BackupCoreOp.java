@@ -25,7 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.BackupFilePaths;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.handler.IncrementalShardBackup;
 import org.apache.solr.handler.SnapShooter;
 

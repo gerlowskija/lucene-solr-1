@@ -80,7 +80,7 @@ import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.handler.BackupFilePaths;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;

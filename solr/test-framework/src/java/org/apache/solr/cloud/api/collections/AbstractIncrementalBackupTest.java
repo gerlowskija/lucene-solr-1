@@ -68,7 +68,7 @@ import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.BackupFilePaths;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;

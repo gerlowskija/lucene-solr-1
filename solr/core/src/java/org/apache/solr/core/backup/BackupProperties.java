@@ -37,7 +37,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.BackupFilePaths;
 import org.apache.solr.util.PropertiesInputStream;
 
 /**

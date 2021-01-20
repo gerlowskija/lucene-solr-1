@@ -28,7 +28,7 @@ import com.google.common.collect.ObjectArrays;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.DeleteBackupCmd.PurgeGraph;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.BackupFilePaths;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 

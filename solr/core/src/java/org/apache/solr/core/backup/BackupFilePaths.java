@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.core.backup;
 
 import java.io.IOException;
 import java.net.URI;

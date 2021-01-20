@@ -51,7 +51,7 @@ import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.handler.BackupFilePaths;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
