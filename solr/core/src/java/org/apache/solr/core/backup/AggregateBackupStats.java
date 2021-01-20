@@ -19,12 +19,14 @@ package org.apache.solr.core.backup;
 
 /**
  * Aggregate stats from multiple {@link ShardBackupMetadata}
+ *
+ * Counted stats may represent multiple shards within a given {@link BackupId}, or span multiple different {@link BackupId BackupIds}.
  */
-public class BackupIdStats {
+public class AggregateBackupStats {
     private int numFiles = 0;
     private long totalSize = 0;
 
-    public BackupIdStats() {
+    public AggregateBackupStats() {
     }
 
     public void add(ShardBackupMetadata shardBackupMetadata) {
@@ -39,5 +41,4 @@ public class BackupIdStats {
     public long getTotalSize() {
         return totalSize;
     }
-
 }

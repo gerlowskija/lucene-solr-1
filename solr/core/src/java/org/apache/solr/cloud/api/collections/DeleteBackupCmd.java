@@ -25,7 +25,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupId;
-import org.apache.solr.core.backup.BackupIdStats;
+import org.apache.solr.core.backup.AggregateBackupStats;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -148,7 +148,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
 
-        Map<BackupId, BackupIdStats> backupIdToCollectionBackupPoint = new HashMap<>();
+        Map<BackupId, AggregateBackupStats> backupIdToCollectionBackupPoint = new HashMap<>();
         List<String> unusedFiles = new ArrayList<>();
         for (Pair<BackupId, String> entry : shardBackupIdDeletes) {
             BackupId backupId = entry.first();
@@ -157,7 +157,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                 continue;
 
             backupIdToCollectionBackupPoint
-                    .putIfAbsent(backupId, new BackupIdStats());
+                    .putIfAbsent(backupId, new AggregateBackupStats());
             backupIdToCollectionBackupPoint.get(backupId).add(shardBackupMetadata);
 
             for (String uniqueIndexFile : shardBackupMetadata.listUniqueFileNames()) {
@@ -186,7 +186,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
     @SuppressWarnings("unchecked")
     private void addResult(URI backupPath, BackupRepository repository,
                            Set<BackupId> backupIdDeletes,
-                           Map<BackupId, BackupIdStats> backupIdToCollectionBackupPoint,
+                           Map<BackupId, AggregateBackupStats> backupIdToCollectionBackupPoint,
                            @SuppressWarnings({"rawtypes"}) NamedList results) {
 
         String collectionName = null;
@@ -207,7 +207,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                 //prop file not found
             }
 
-            BackupIdStats cbp = backupIdToCollectionBackupPoint.getOrDefault(backupId, new BackupIdStats());
+            AggregateBackupStats cbp = backupIdToCollectionBackupPoint.getOrDefault(backupId, new AggregateBackupStats());
             backupIdResult.add("backupId", backupId.getId());
             backupIdResult.add("size", cbp.getTotalSize());
             backupIdResult.add("numFiles", cbp.getNumFiles());
