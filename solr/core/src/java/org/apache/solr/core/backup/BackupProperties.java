@@ -70,7 +70,7 @@ public class BackupProperties {
     }
 
     public static Optional<BackupProperties> readFromLatest(BackupRepository repository, URI backupPath) throws IOException {
-        Optional<BackupId> lastBackupId = BackupId.findMostRecent(repository.listAllOrEmpty(backupPath));
+        Optional<BackupId> lastBackupId = BackupFilePaths.findMostRecentBackupIdFromFileListing(repository.listAllOrEmpty(backupPath));
 
         if (!lastBackupId.isPresent()) {
             return Optional.empty();

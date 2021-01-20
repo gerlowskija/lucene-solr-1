@@ -1202,7 +1202,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         String backupName = req.getParams().get(NAME);
         URI backupLocation = repository.resolve(repository.createURI(location), backupName);
         String[] subFiles = repository.listAllOrEmpty(backupLocation);
-        List<BackupId> propsFiles = BackupId.findAll(subFiles);
+        List<BackupId> propsFiles = BackupFilePaths.findAllBackupIdsFromFileListing(subFiles);
 
         NamedList<Object> results = new NamedList<>();
         ArrayList<Map> backups = new ArrayList<>();

@@ -111,7 +111,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
     void keepNumberOfBackup(BackupRepository repository, URI backupPath,
                             int maxNumBackup,
                             @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
-        List<BackupId> backupIds = BackupId.findAll(repository.listAllOrEmpty(backupPath));
+        List<BackupId> backupIds = BackupFilePaths.findAllBackupIdsFromFileListing(repository.listAllOrEmpty(backupPath));
         if (backupIds.size() <= maxNumBackup) {
             return;
         }
@@ -305,7 +305,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
 
         private void buildLogicalGraph(BackupRepository repository, URI backupPath) throws IOException {
-            List<BackupId> backupIds = BackupId.findAll(repository.listAllOrEmpty(backupPath));
+            List<BackupId> backupIds = BackupFilePaths.findAllBackupIdsFromFileListing(repository.listAllOrEmpty(backupPath));
             for (BackupId backupId : backupIds) {
                 BackupProperties backupProps = BackupProperties.readFrom(repository, backupPath,
                         BackupFilePaths.getBackupPropsName(backupId));

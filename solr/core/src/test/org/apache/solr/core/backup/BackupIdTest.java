@@ -22,18 +22,32 @@ import java.util.Optional;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
+import static org.apache.solr.core.backup.BackupId.TRADITIONAL_BACKUP;
+
+/**
+ * Unit tests for {@link BackupId}
+ */
 public class BackupIdTest extends SolrTestCase {
 
-    // JEGERLOW
     @Test
-    public void test() {
-        BackupId backupId = BackupId.findMostRecent(new String[] {"aaa", "baa.properties", "backup.properties",
-                "backup_1.properties", "backup_2.properties", "backup_neqewq.properties", "backup999.properties"}).get();
-        assertEquals("backup_2.properties", BackupFilePaths.getBackupPropsName(backupId));
-        backupId = backupId.nextBackupId();
-        assertEquals("backup_3.properties", BackupFilePaths.getBackupPropsName(backupId));
+    public void testZero() {
+        final BackupId id = BackupId.zero();
+        assertEquals(0, id.getId());
+    }
 
-        Optional<BackupId> op = BackupId.findMostRecent(new String[0]);
-        assertFalse(op.isPresent());
+    @Test
+    public void testTraditionalBackupId() {
+        final BackupId id = BackupId.traditionalBackup();
+        assertEquals(TRADITIONAL_BACKUP, id.getId());
+    }
+
+    @Test
+    public void testBackupIdIncrementing() {
+        final BackupId initialId = new BackupId(3);
+        final BackupId nextId = initialId.nextBackupId();
+
+        assertEquals(3, initialId.getId());
+        assertEquals(4, nextId.getId());
+        assertTrue(initialId.compareTo(nextId) < 0);
     }
 }

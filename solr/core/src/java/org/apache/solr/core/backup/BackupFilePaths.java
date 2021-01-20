@@ -19,57 +19,31 @@ package org.apache.solr.core.backup;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.solr.core.backup.BackupId;
-import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.repository.BackupRepository;
 
+import static org.apache.solr.core.backup.BackupId.TRADITIONAL_BACKUP;
 import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 
 /**
- * Utility class for getting paths related to backups
+ * Utility class for getting paths related to backups, or parsing information out of those paths.
  */
 public class BackupFilePaths {
 
+    private static final Pattern BACKUP_PROPS_ID_PTN = Pattern.compile("backup_([0-9]+).properties");
     private BackupRepository repository;
     private URI backupLoc;
 
     public BackupFilePaths(BackupRepository repository, URI backupLoc) {
         this.repository = repository;
         this.backupLoc = backupLoc;
-    }
-
-    /**
-     * Get the directory name used to hold backed up ZK state
-     *
-     * Valid for both incremental and traditional backups.
-     *
-     * @param id the ID of the backup in question
-     */
-    public static String getZkStateDir(BackupId id) {
-        if (id.id == -1) {
-            return ZK_STATE_DIR;
-        }
-        return String.format(Locale.ROOT, "%s_%d/", ZK_STATE_DIR, id.id);
-    }
-
-    /**
-     * Get the filename of the top-level backup properties file
-     *
-     * Valid for both incremental and traditional backups.
-     *
-     * @param id the ID of the backup in question
-     */
-    public static String getBackupPropsName(BackupId id) {
-        if (id.id == -1) {
-            return BackupManager.BACKUP_PROPS_FILE;
-        }
-        return getBackupPropsName(id.id);
-    }
-
-    private static String getBackupPropsName(int id) {
-        return String.format(Locale.ROOT, "backup_%d.properties", id);
     }
 
     /**
@@ -112,5 +86,67 @@ public class BackupFilePaths {
         if (!repository.exists(shardBackupIdDir)) {
             repository.createDirectory(shardBackupIdDir);
         }
+    }
+
+    /**
+     * Get the directory name used to hold backed up ZK state
+     *
+     * Valid for both incremental and traditional backups.
+     *
+     * @param id the ID of the backup in question
+     */
+    public static String getZkStateDir(BackupId id) {
+        if (id.id == TRADITIONAL_BACKUP) {
+            return ZK_STATE_DIR;
+        }
+        return String.format(Locale.ROOT, "%s_%d/", ZK_STATE_DIR, id.id);
+    }
+
+    /**
+     * Get the filename of the top-level backup properties file
+     *
+     * Valid for both incremental and traditional backups.
+     *
+     * @param id the ID of the backup in question
+     */
+    public static String getBackupPropsName(BackupId id) {
+        if (id.id == TRADITIONAL_BACKUP) {
+            return BackupManager.BACKUP_PROPS_FILE;
+        }
+        return getBackupPropsName(id.id);
+    }
+
+    /**
+     * Identify all strings which appear to be the filename of a top-level backup properties file.
+     *
+     * Only valid for incremental backups.
+     *
+     * @param listFiles a list of strings, filenames which may or may not correspond to backup properties files
+     */
+    public static List<BackupId> findAllBackupIdsFromFileListing(String[] listFiles) {
+        List<BackupId> result = new ArrayList<>();
+        for (String file: listFiles) {
+            Matcher m = BACKUP_PROPS_ID_PTN.matcher(file);
+            if (m.find()) {
+                result.add(new BackupId(Integer.parseInt(m.group(1))));
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Identify the string from an array of filenames which represents the most recent top-level backup properties file.
+     *
+     * Only valid for incremental backups.
+     *
+     * @param listFiles a list of strings, filenames which may or may not correspond to backup properties files.
+     */
+    public static Optional<BackupId> findMostRecentBackupIdFromFileListing(String[] listFiles) {
+        return findAllBackupIdsFromFileListing(listFiles).stream().max(Comparator.comparingInt(o -> o.id));
+    }
+
+    private static String getBackupPropsName(int id) {
+        return String.format(Locale.ROOT, "backup_%d.properties", id);
     }
 }

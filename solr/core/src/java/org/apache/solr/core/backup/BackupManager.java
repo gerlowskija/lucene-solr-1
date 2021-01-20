@@ -89,7 +89,7 @@ public class BackupManager {
     Objects.requireNonNull(repository);
     Objects.requireNonNull(stateReader);
 
-    Optional<BackupId> lastBackupId = BackupId.findMostRecent(repository.listAllOrEmpty(backupPath));
+    Optional<BackupId> lastBackupId = BackupFilePaths.findMostRecentBackupIdFromFileListing(repository.listAllOrEmpty(backupPath));
 
     return new BackupManager(repository, backupPath, stateReader, lastBackupId
             .map(id ->BackupFilePaths.getBackupPropsName(id)).orElse(null),
@@ -104,7 +104,7 @@ public class BackupManager {
     Objects.requireNonNull(stateReader);
 
     URI backupPath = repository.resolve(backupLoc, backupName);
-    return new BackupManager(repository, backupPath, stateReader, null, BackupId.oldVersion());
+    return new BackupManager(repository, backupPath, stateReader, null, BackupId.traditionalBackup());
   }
 
   public static BackupManager forRestore(BackupRepository repository,
@@ -133,7 +133,7 @@ public class BackupManager {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't restore since doesn't exist: " + backupPath);
     }
 
-    Optional<BackupId> opFileGen = BackupId.findMostRecent(repository.listAll(backupPath));
+    Optional<BackupId> opFileGen = BackupFilePaths.findMostRecentBackupIdFromFileListing(repository.listAll(backupPath));
     if (opFileGen.isPresent()) {
       BackupId backupPropFile = opFileGen.get();
       return new BackupManager(repository, backupPath, stateReader, BackupFilePaths.getBackupPropsName(backupPropFile),

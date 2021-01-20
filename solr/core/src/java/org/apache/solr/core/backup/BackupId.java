@@ -20,15 +20,12 @@ package org.apache.solr.core.backup;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
-
 public class BackupId implements Comparable<BackupId>{
-    private static final Pattern BACKUP_PROPS_ID_PTN = Pattern.compile("backup_([0-9]+).properties");
+    public static final int TRADITIONAL_BACKUP = -1;
 
     public final int id;
 
@@ -40,30 +37,12 @@ public class BackupId implements Comparable<BackupId>{
         return new BackupId(0);
     }
 
-    public static BackupId oldVersion() {
-        return new BackupId(-1);
+    public static BackupId traditionalBackup() {
+        return new BackupId(TRADITIONAL_BACKUP);
     }
 
     public BackupId nextBackupId() {
         return new BackupId(id+1);
-    }
-
-    // TODO Move?
-    public static List<BackupId> findAll(String[] listFiles) {
-        List<BackupId> result = new ArrayList<>();
-        for (String file: listFiles) {
-            Matcher m = BACKUP_PROPS_ID_PTN.matcher(file);
-            if (m.find()) {
-                result.add(new BackupId(Integer.parseInt(m.group(1))));
-            }
-        }
-
-        return result;
-    }
-
-    // TODO move?
-    static Optional<BackupId> findMostRecent(String[] listFiles) {
-        return findAll(listFiles).stream().max(Comparator.comparingInt(o -> o.id));
     }
 
     public int getId() {
