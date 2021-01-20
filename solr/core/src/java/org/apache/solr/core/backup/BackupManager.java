@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository.PathType;
+import org.apache.solr.handler.BackupFilePaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -92,7 +93,7 @@ public class BackupManager {
     Optional<BackupId> lastBackupId = BackupId.findMostRecent(repository.listAllOrEmpty(backupPath));
 
     return new BackupManager(repository, backupPath, stateReader, lastBackupId
-            .map(BackupId::getBackupPropsName).orElse(null),
+            .map(id ->BackupFilePaths.getBackupPropsName(id)).orElse(null),
             lastBackupId.map(BackupId::nextBackupId).orElse(BackupId.zero()));
   }
 
@@ -115,7 +116,7 @@ public class BackupManager {
     Objects.requireNonNull(stateReader);
 
     BackupId backupId = new BackupId(bid);
-    String backupPropsName = backupId.getBackupPropsName();
+    String backupPropsName = BackupFilePaths.getBackupPropsName(backupId);
     if (!repository.exists(repository.resolve(backupPath, backupPropsName))) {
       throw new IllegalStateException("Backup id " + bid + " was not found");
     }
@@ -136,7 +137,7 @@ public class BackupManager {
     Optional<BackupId> opFileGen = BackupId.findMostRecent(repository.listAll(backupPath));
     if (opFileGen.isPresent()) {
       BackupId backupPropFile = opFileGen.get();
-      return new BackupManager(repository, backupPath, stateReader, backupPropFile.getBackupPropsName(),
+      return new BackupManager(repository, backupPath, stateReader, BackupFilePaths.getBackupPropsName(backupPropFile),
               backupPropFile);
     } else if (repository.exists(repository.resolve(backupPath, BACKUP_PROPS_FILE))){
       return new BackupManager(repository, backupPath, stateReader, BACKUP_PROPS_FILE, null);
@@ -185,7 +186,7 @@ public class BackupManager {
    * @throws IOException in case of I/O error
    */
   public void writeBackupProperties(BackupProperties props) throws IOException {
-    URI dest = repository.resolve(backupPath, backupId.getBackupPropsName());
+    URI dest = repository.resolve(backupPath, BackupFilePaths.getBackupPropsName(backupId));
     try (Writer propsWriter = new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
       props.store(propsWriter);
     }
@@ -355,7 +356,7 @@ public class BackupManager {
   private URI getZkStateDir(String... subFolders) {
     URI zkStateDir;
     if (backupId != null) {
-      String zkBackupFolder = backupId.getZkStateDir();
+      final String zkBackupFolder = BackupFilePaths.getZkStateDir(backupId);
       zkStateDir = repository.resolve(backupPath, zkBackupFolder);
     } else {
       zkStateDir = repository.resolve(backupPath, ZK_STATE_DIR);

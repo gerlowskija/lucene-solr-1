@@ -28,7 +28,7 @@ import com.google.common.collect.ObjectArrays;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.DeleteBackupCmd.PurgeGraph;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.IncrementalBackupPaths;
+import org.apache.solr.handler.BackupFilePaths;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
@@ -43,7 +43,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
     public void test() throws URISyntaxException, IOException {
         assumeWorkingMockito();
         BackupRepository repository = mock(BackupRepository.class);
-        IncrementalBackupPaths paths = mock(IncrementalBackupPaths.class);
+        BackupFilePaths paths = mock(BackupFilePaths.class);
         when(paths.getBackupLocation()).thenReturn(new URI("/temp"));
         when(paths.getIndexDir()).thenReturn(new URI("/temp/index"));
         when(paths.getShardBackupIdDir()).thenReturn(new URI("/temp/backup_point"));
@@ -61,7 +61,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         testMissingIndexFiles(repository, paths);
     }
 
-    private void testMissingIndexFiles(BackupRepository repository, IncrementalBackupPaths paths) throws IOException {
+    private void testMissingIndexFiles(BackupRepository repository, BackupFilePaths paths) throws IOException {
         PurgeGraph purgeGraph = new PurgeGraph();
         buildCompleteGraph(repository, paths, purgeGraph);
 
@@ -94,7 +94,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         assertFalse(purgeGraph.indexFileDeletes.contains("s1_101"));
     }
 
-    private void testMissingBackupPointFiles(BackupRepository repository, IncrementalBackupPaths paths) throws IOException {
+    private void testMissingBackupPointFiles(BackupRepository repository, BackupFilePaths paths) throws IOException {
         PurgeGraph purgeGraph = new PurgeGraph();
         buildCompleteGraph(repository, paths, purgeGraph);
         when(repository.listAllOrEmpty(same(paths.getShardBackupIdDir()))).thenAnswer((Answer<String[]>)
@@ -124,7 +124,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         assertFalse(purgeGraph.indexFileDeletes.contains("s1_102"));
     }
 
-    private void testDeleteUnreferencedFiles(BackupRepository repository, IncrementalBackupPaths paths,
+    private void testDeleteUnreferencedFiles(BackupRepository repository, BackupFilePaths paths,
                                              PurgeGraph purgeGraph) throws IOException {
         buildCompleteGraph(repository, paths, purgeGraph);
         String[] unRefBackupPoints = addUnRefFiles(repository, "b4_s", paths.getShardBackupIdDir());
@@ -151,7 +151,7 @@ public class PurgeGraphTest extends SolrTestCaseJ4 {
         return unRefBackupPoints;
     }
 
-    private void buildCompleteGraph(BackupRepository repository, IncrementalBackupPaths paths,
+    private void buildCompleteGraph(BackupRepository repository, BackupFilePaths paths,
                                     PurgeGraph purgeGraph) throws IOException {
         when(repository.listAllOrEmpty(same(paths.getShardBackupIdDir()))).thenAnswer((Answer<String[]>) invocationOnMock -> shardBackupIds);
         //logical

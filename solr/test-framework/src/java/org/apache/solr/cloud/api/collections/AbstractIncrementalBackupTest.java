@@ -68,7 +68,7 @@ import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.IncrementalBackupPaths;
+import org.apache.solr.handler.BackupFilePaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -189,7 +189,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                 .newBackupRepository(BACKUP_REPO_NAME)) {
             String backupLocation = repository.getBackupLocation(getBackupLocation());
             URI uri = repository.resolve(repository.createURI(backupLocation), backupName);
-            IncrementalBackupPaths backupPaths = new IncrementalBackupPaths(repository, uri);
+            BackupFilePaths backupPaths = new BackupFilePaths(repository, uri);
             IncrementalBackupVerifier verifier = new IncrementalBackupVerifier(repository, backupLocation, backupName, 3);
 
             backupRestoreThenCheck(solrClient, verifier);
@@ -373,7 +373,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         private URI backupURI;
         private String backupLocation;
         private String backupName;
-        private IncrementalBackupPaths incBackupFiles;
+        private BackupFilePaths incBackupFiles;
 
         private Map<String, Collection<String>> lastShardCommitToBackupFiles = new HashMap<>();
         // the first generation after calling backup is zero
@@ -385,7 +385,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             this.repository = repository;
             this.backupLocation = backupLocation;
             this.backupURI = repository.resolve(repository.createURI(backupLocation), backupName);
-            this.incBackupFiles = new IncrementalBackupPaths(repository, this.backupURI);
+            this.incBackupFiles = new BackupFilePaths(repository, this.backupURI);
             this.backupName = backupName;
             this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
         }
@@ -426,7 +426,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                     .readFromLatest(repository, backupURI)
                     .flatMap(bp -> bp.getShardBackupIdFor(shardName))
                     .get();
-            return ShardBackupId.from(repository, new IncrementalBackupPaths(repository, backupURI).getShardBackupIdDir(), metaFile);
+            return ShardBackupId.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupIdDir(), metaFile);
         }
 
         private void assertIndexInputEquals(IndexInput in1, IndexInput in2) throws IOException {
@@ -472,7 +472,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             URI zkBackupFolder = repository.resolve(backupURI, "zk_backup_"+numBackup);
             assertTrue(repository.exists(backupPropertiesFile));
             assertTrue(repository.exists(zkBackupFolder));
-            assertFolderAreSame(repository.resolve(backupURI, prevBackupId.getZkStateDir()), zkBackupFolder);
+            assertFolderAreSame(repository.resolve(backupURI, BackupFilePaths.getZkStateDir(prevBackupId)), zkBackupFolder);
 
             // verify indexes file
             for(Slice slice : getCollectionState(getCollectionName()).getSlices()) {

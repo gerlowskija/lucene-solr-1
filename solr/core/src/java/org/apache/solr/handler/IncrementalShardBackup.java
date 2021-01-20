@@ -47,7 +47,7 @@ public class IncrementalShardBackup {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private SolrCore solrCore;
 
-    private IncrementalBackupPaths incBackupFiles;
+    private BackupFilePaths incBackupFiles;
     private BackupRepository backupRepo;
 
     private String prevShardBackupIdFile;
@@ -59,7 +59,7 @@ public class IncrementalShardBackup {
      *                             uploading index files already present in this file.
      * @param shardBackupIdFile file where all meta data of this backup will be stored to.
      */
-    public IncrementalShardBackup(BackupRepository backupRepo, SolrCore solrCore, IncrementalBackupPaths incBackupFiles,
+    public IncrementalShardBackup(BackupRepository backupRepo, SolrCore solrCore, BackupFilePaths incBackupFiles,
                                   String prevShardBackupIdFile, String shardBackupIdFile) {
         this.backupRepo = backupRepo;
         this.solrCore = solrCore;

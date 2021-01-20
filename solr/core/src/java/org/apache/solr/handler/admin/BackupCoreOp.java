@@ -25,7 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.IncrementalBackupPaths;
+import org.apache.solr.handler.BackupFilePaths;
 import org.apache.solr.handler.IncrementalShardBackup;
 import org.apache.solr.handler.SnapShooter;
 
@@ -56,7 +56,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
       URI locationUri = repository.createURI(location);
       if (incremental) {
-        IncrementalBackupPaths incBackupFiles = new IncrementalBackupPaths(repository, locationUri);
+        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
         IncrementalShardBackup incSnapShooter = new IncrementalShardBackup(repository, core, incBackupFiles,
                 prevBackupMetadataFile, backupMetadataFile);
         @SuppressWarnings({"rawtypes"})

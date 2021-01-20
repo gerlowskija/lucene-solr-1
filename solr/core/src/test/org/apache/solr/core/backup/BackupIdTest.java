@@ -20,17 +20,19 @@ package org.apache.solr.core.backup;
 import java.util.Optional;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.handler.BackupFilePaths;
 import org.junit.Test;
 
 public class BackupIdTest extends SolrTestCase {
 
+    // JEGERLOW
     @Test
     public void test() {
         BackupId backupId = BackupId.findMostRecent(new String[] {"aaa", "baa.properties", "backup.properties",
                 "backup_1.properties", "backup_2.properties", "backup_neqewq.properties", "backup999.properties"}).get();
-        assertEquals("backup_2.properties", backupId.getBackupPropsName());
+        assertEquals("backup_2.properties", BackupFilePaths.getBackupPropsName(backupId));
         backupId = backupId.nextBackupId();
-        assertEquals("backup_3.properties", backupId.getBackupPropsName());
+        assertEquals("backup_3.properties", BackupFilePaths.getBackupPropsName(backupId));
 
         Optional<BackupId> op = BackupId.findMostRecent(new String[0]);
         assertFalse(op.isPresent());

@@ -60,7 +60,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   public static RestoreCore createWithMetaFile(BackupRepository repo, SolrCore core, URI location, String metaFile) throws IOException {
-    IncrementalBackupPaths incBackupFiles = new IncrementalBackupPaths(repo, location);
+    BackupFilePaths incBackupFiles = new BackupFilePaths(repo, location);
     URI shardBackupIdDir = incBackupFiles.getShardBackupIdDir();
     ShardBackupIdRestoreRepository resolver = new ShardBackupIdRestoreRepository(location, incBackupFiles.getIndexDir(),
             repo, ShardBackupId.from(repo, shardBackupIdDir, metaFile));

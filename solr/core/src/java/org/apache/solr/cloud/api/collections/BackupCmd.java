@@ -51,7 +51,7 @@ import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.handler.IncrementalBackupPaths;
+import org.apache.solr.handler.BackupFilePaths;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,8 +102,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       BackupManager backupMgr;
       if (incremental) {
-        IncrementalBackupPaths incBackupFiles = new IncrementalBackupPaths(repository, backupPath);
-        incBackupFiles.createFolders();
+        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPath);
+        incBackupFiles.createIncrementalBackupFolders();
         backupMgr = BackupManager.forIncrementalBackup(repository, ocmh.zkStateReader, backupPath);
       } else {
         backupMgr = BackupManager.forBackup(repository, ocmh.zkStateReader, location, backupName);

@@ -17,12 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -30,12 +24,26 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.backup.BackupProperties;
-import org.apache.solr.core.backup.BackupIdStats;
 import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.BackupIdStats;
+import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.handler.IncrementalBackupPaths;
+import org.apache.solr.handler.BackupFilePaths;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;
@@ -84,7 +92,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         PurgeGraph purgeGraph = new PurgeGraph();
         purgeGraph.build(repository, backupPath);
 
-        IncrementalBackupPaths backupPaths = new IncrementalBackupPaths(repository, backupPath);
+        BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
         repository.delete(backupPaths.getIndexDir(), purgeGraph.indexFileDeletes, true);
         repository.delete(backupPaths.getShardBackupIdDir(), purgeGraph.shardBackupIdDeletes, true);
         repository.delete(backupPath, purgeGraph.backupIdDeletes, true);
@@ -116,7 +124,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
     void deleteBackupIds(URI backupPath, BackupRepository repository,
                          Set<BackupId> backupIdsDeletes,
                          @SuppressWarnings({"rawtypes"}) NamedList results) throws IOException {
-        IncrementalBackupPaths incBackupFiles = new IncrementalBackupPaths(repository, backupPath);
+        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPath);
         URI shardBackupIdDir = incBackupFiles.getShardBackupIdDir();
 
         Set<String> referencedIndexFiles = new HashSet<>();
@@ -164,7 +172,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
-                repository.deleteDirectory(repository.resolve(backupPath, backupId.getZkStateDir()));
+                repository.deleteDirectory(repository.resolve(backupPath, BackupFilePaths.getZkStateDir(backupId)));
             }
         } catch (FileNotFoundException e) {
             //ignore this
@@ -172,7 +180,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
         //add details to result before deleting backupPropFiles
         addResult(backupPath, repository, backupIdsDeletes, backupIdToCollectionBackupPoint, results);
-        repository.delete(backupPath, backupIdsDeletes.stream().map(BackupId::getBackupPropsName).collect(Collectors.toList()), true);
+        repository.delete(backupPath, backupIdsDeletes.stream().map(id -> BackupFilePaths.getBackupPropsName(id)).collect(Collectors.toList()), true);
     }
 
     @SuppressWarnings("unchecked")
@@ -189,7 +197,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
             NamedList<Object> backupIdResult = new NamedList<>();
 
             try {
-                BackupProperties props = BackupProperties.readFrom(repository, backupPath, backupId.getBackupPropsName());
+                BackupProperties props = BackupProperties.readFrom(repository, backupPath, BackupFilePaths.getBackupPropsName(backupId));
                 backupIdResult.add(START_TIME_PROP, props.getStartTime());
                 if (collectionName == null) {
                     collectionName = props.getCollection();
@@ -210,7 +218,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
     private void deleteBackupId(BackupRepository repository, URI backupPath,
                                 int bid, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
         BackupId backupId = new BackupId(bid);
-        if (!repository.exists(repository.resolve(backupPath, backupId.getBackupPropsName()))) {
+        if (!repository.exists(repository.resolve(backupPath, BackupFilePaths.getBackupPropsName(backupId)))) {
             return;
         }
 
@@ -229,12 +237,12 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         List<String> indexFileDeletes = new ArrayList<>();
 
         public void build(BackupRepository repository, URI backupPath) throws IOException {
-            IncrementalBackupPaths backupPaths = new IncrementalBackupPaths(repository, backupPath);
+            BackupFilePaths backupPaths = new BackupFilePaths(repository, backupPath);
             buildLogicalGraph(repository, backupPath);
             findDeletableNodes(repository, backupPaths);
         }
 
-        public void findDeletableNodes(BackupRepository repository, IncrementalBackupPaths backupPaths) {
+        public void findDeletableNodes(BackupRepository repository, BackupFilePaths backupPaths) {
             // mark nodes as existing
             visitExistingNodes(repository.listAllOrEmpty(backupPaths.getShardBackupIdDir()),
                     shardBackupIdNodeMap, shardBackupIdDeletes);
@@ -300,9 +308,9 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
             List<BackupId> backupIds = BackupId.findAll(repository.listAllOrEmpty(backupPath));
             for (BackupId backupId : backupIds) {
                 BackupProperties backupProps = BackupProperties.readFrom(repository, backupPath,
-                        backupId.getBackupPropsName());
+                        BackupFilePaths.getBackupPropsName(backupId));
 
-                Node backupIdNode = getBackupIdNode(backupId.getBackupPropsName());
+                Node backupIdNode = getBackupIdNode(BackupFilePaths.getBackupPropsName(backupId));
                 for (String shardBackupIdFile : backupProps.getAllShardBackupIdFiles()) {
                     Node shardBackupIdNode = getShardBackupIdNode(shardBackupIdFile);
                     addEdge(backupIdNode, shardBackupIdNode);

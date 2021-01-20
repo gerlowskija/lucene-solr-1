@@ -48,6 +48,7 @@ public class BackupId implements Comparable<BackupId>{
         return new BackupId(id+1);
     }
 
+    // TODO Move?
     public static List<BackupId> findAll(String[] listFiles) {
         List<BackupId> result = new ArrayList<>();
         for (String file: listFiles) {
@@ -60,24 +61,7 @@ public class BackupId implements Comparable<BackupId>{
         return result;
     }
 
-    public String getZkStateDir() {
-        if (id == -1) {
-            return ZK_STATE_DIR;
-        }
-        return String.format(Locale.ROOT, "%s_%d/", ZK_STATE_DIR, id);
-    }
-
-    public String getBackupPropsName() {
-        if (id == -1) {
-            return BackupManager.BACKUP_PROPS_FILE;
-        }
-        return getBackupPropsName(id);
-    }
-
-    private static String getBackupPropsName(int id) {
-        return String.format(Locale.ROOT, "backup_%d.properties", id);
-    }
-
+    // TODO move?
     static Optional<BackupId> findMostRecent(String[] listFiles) {
         return findAll(listFiles).stream().max(Comparator.comparingInt(o -> o.id));
     }

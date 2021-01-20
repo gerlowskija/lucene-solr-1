@@ -37,6 +37,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.BackupFilePaths;
 import org.apache.solr.util.PropertiesInputStream;
 
 /**
@@ -76,7 +77,7 @@ public class BackupProperties {
             return Optional.empty();
         }
 
-        return Optional.of(readFrom(repository, backupPath, lastBackupId.get().getBackupPropsName()));
+        return Optional.of(readFrom(repository, backupPath, BackupFilePaths.getBackupPropsName(lastBackupId.get())));
     }
 
     public static BackupProperties readFrom(BackupRepository repository, URI backupPath, String fileName) throws IOException {
