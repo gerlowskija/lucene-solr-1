@@ -36,13 +36,13 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.Checksum;
-import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Backup a core in an incremental way by leveraging information from previous backups ({@link ShardBackupId}
+ * Backup a core in an incremental way by leveraging information from previous backups ({@link ShardBackupMetadata}
  */
 public class IncrementalShardBackup {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -56,7 +56,7 @@ public class IncrementalShardBackup {
 
     /**
      *
-     * @param prevShardBackupIdFile previous ShardBackupId file which will be used for skipping
+     * @param prevShardBackupIdFile previous ShardBackupMetadata file which will be used for skipping
      *                             uploading index files already present in this file.
      * @param shardBackupIdFile file where all meta data of this backup will be stored to.
      */
@@ -137,25 +137,25 @@ public class IncrementalShardBackup {
         return details;
     }
 
-    private ShardBackupId getPrevBackupPoint() throws IOException {
+    private ShardBackupMetadata getPrevBackupPoint() throws IOException {
         if (prevShardBackupIdFile == null) {
-            return ShardBackupId.empty();
+            return ShardBackupMetadata.empty();
         }
-        return ShardBackupId.from(backupRepo, incBackupFiles.getShardBackupIdDir(), prevShardBackupIdFile);
+        return ShardBackupMetadata.from(backupRepo, incBackupFiles.getShardBackupIdDir(), prevShardBackupIdFile);
     }
 
     private BackupStats incrementalCopy(Collection<String> indexFiles, Directory dir) throws IOException {
-        ShardBackupId oldBackupPoint = getPrevBackupPoint();
-        ShardBackupId currentBackupPoint = ShardBackupId.empty();
+        ShardBackupMetadata oldBackupPoint = getPrevBackupPoint();
+        ShardBackupMetadata currentBackupPoint = ShardBackupMetadata.empty();
         URI indexDir = incBackupFiles.getIndexDir();
         BackupStats backupStats = new BackupStats();
 
         for(String fileName : indexFiles) {
-            Optional<ShardBackupId.BackedFile> opBackedFile = oldBackupPoint.getFile(fileName);
+            Optional<ShardBackupMetadata.BackedFile> opBackedFile = oldBackupPoint.getFile(fileName);
             Checksum originalFileCS = backupRepo.checksum(dir, fileName);
 
             if (opBackedFile.isPresent()) {
-                ShardBackupId.BackedFile backedFile = opBackedFile.get();
+                ShardBackupMetadata.BackedFile backedFile = opBackedFile.get();
                 Checksum existedFileCS = backedFile.fileChecksum;
                 if (existedFileCS.equals(originalFileCS)) {
                     currentBackupPoint.addBackedFile(opBackedFile.get());

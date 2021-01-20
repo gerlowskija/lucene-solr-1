@@ -66,7 +66,7 @@ import org.apache.solr.core.TrackingBackupRepository;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.Checksum;
-import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.junit.BeforeClass;
@@ -421,12 +421,12 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             verify(newFilesCopiedOver);
         }
 
-        ShardBackupId getLastShardBackupId(String shardName) throws IOException {
+        ShardBackupMetadata getLastShardBackupId(String shardName) throws IOException {
             String metaFile = BackupProperties
                     .readFromLatest(repository, backupURI)
                     .flatMap(bp -> bp.getShardBackupIdFor(shardName))
                     .get();
-            return ShardBackupId.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupIdDir(), metaFile);
+            return ShardBackupMetadata.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupIdDir(), metaFile);
         }
 
         private void assertIndexInputEquals(IndexInput in1, IndexInput in2) throws IOException {
@@ -477,7 +477,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             // verify indexes file
             for(Slice slice : getCollectionState(getCollectionName()).getSlices()) {
                 Replica leader = slice.getLeader();
-                final ShardBackupId shardBackupId = getLastShardBackupId(slice.getName());
+                final ShardBackupMetadata shardBackupMetadata = getLastShardBackupId(slice.getName());
 
                 try (SolrCore solrCore = cluster.getReplicaJetty(leader).getCoreContainer().getCore(leader.getCoreName())) {
                     Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -487,7 +487,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
                         Collection<String> newBackupFiles = newIndexFilesComparedToLastBackup(slice.getName(), lastCommit).stream()
                                 .map(indexFile -> {
-                                    Optional<ShardBackupId.BackedFile> backedFile = shardBackupId.getFile(indexFile);
+                                    Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(indexFile);
                                     assertTrue(backedFile.isPresent());
                                     return backedFile.get().uniqueFileName;
                                 })
@@ -495,7 +495,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
                         lastCommit.getFileNames().forEach(
                                 f -> {
-                                    Optional<ShardBackupId.BackedFile> backedFile = shardBackupId.getFile(f);
+                                    Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(f);
                                     assertTrue(backedFile.isPresent());
                                     String uniqueFileName = backedFile.get().uniqueFileName;
 
@@ -514,7 +514,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                                 }
                         );
 
-                        assertEquals("Incremental backup stored more files than needed", lastCommit.getFileNames().size(), shardBackupId.listOriginalFileNames().size());
+                        assertEquals("Incremental backup stored more files than needed", lastCommit.getFileNames().size(), shardBackupMetadata.listOriginalFileNames().size());
                     } finally {
                         solrCore.getDirectoryFactory().release(dir);
                     }

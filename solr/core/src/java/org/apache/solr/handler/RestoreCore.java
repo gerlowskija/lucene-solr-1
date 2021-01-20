@@ -38,7 +38,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.Checksum;
-import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +64,7 @@ public class RestoreCore implements Callable<Boolean> {
     BackupFilePaths incBackupFiles = new BackupFilePaths(repo, location);
     URI shardBackupIdDir = incBackupFiles.getShardBackupIdDir();
     ShardBackupIdRestoreRepository resolver = new ShardBackupIdRestoreRepository(location, incBackupFiles.getIndexDir(),
-            repo, ShardBackupId.from(repo, shardBackupIdDir, metaFile));
+            repo, ShardBackupMetadata.from(repo, shardBackupIdDir, metaFile));
     return new RestoreCore(core, resolver);
   }
 
@@ -233,17 +233,17 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   /**
-   * A {@link RestoreRepository} based on information stored in {@link ShardBackupId}
+   * A {@link RestoreRepository} based on information stored in {@link ShardBackupMetadata}
    */
   private static class ShardBackupIdRestoreRepository implements RestoreRepository {
 
-    private final ShardBackupId shardBackupId;
+    private final ShardBackupMetadata shardBackupMetadata;
     private final URI indexURI;
     protected final URI backupPath;
     protected final BackupRepository repository;
 
-    public ShardBackupIdRestoreRepository(URI backupPath, URI indexURI, BackupRepository repository, ShardBackupId shardBackupId) {
-      this.shardBackupId = shardBackupId;
+    public ShardBackupIdRestoreRepository(URI backupPath, URI indexURI, BackupRepository repository, ShardBackupMetadata shardBackupMetadata) {
+      this.shardBackupMetadata = shardBackupMetadata;
       this.indexURI = indexURI;
       this.backupPath = backupPath;
       this.repository = repository;
@@ -251,7 +251,7 @@ public class RestoreCore implements Callable<Boolean> {
 
     @Override
     public String[] listAllFiles() {
-      return shardBackupId.listOriginalFileNames().toArray(new String[0]);
+      return shardBackupMetadata.listOriginalFileNames().toArray(new String[0]);
     }
 
     @Override
@@ -272,12 +272,12 @@ public class RestoreCore implements Callable<Boolean> {
     }
 
     public Checksum checksum(String filename) {
-      Optional<ShardBackupId.BackedFile> backedFile = shardBackupId.getFile(filename);
+      Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(filename);
       return backedFile.map(bf -> bf.fileChecksum).orElse(null);
     }
 
     private String getStoredFilename(String filename) {
-      return shardBackupId.getFile(filename).get().uniqueFileName;
+      return shardBackupMetadata.getFile(filename).get().uniqueFileName;
     }
   }
 }

@@ -36,11 +36,11 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.util.PropertiesInputStream;
 
 /**
- * ShardBackupId is a metadata (json) file storing all the index files needed for a specific backed up commit.
+ * ShardBackupMetadata is a metadata (json) file storing all the index files needed for a specific backed up commit.
  * To avoid file names duplication between multiple backups and shards,
  * each index file is stored with an uniqueName and the mapping from uniqueName to its original name is also stored here
  */
-public class ShardBackupId {
+public class ShardBackupMetadata {
     private Map<String, BackedFile> allFiles = new HashMap<>();
     private List<String> uniqueFileNames = new ArrayList<>();
 
@@ -69,11 +69,11 @@ public class ShardBackupId {
         return Collections.unmodifiableList(uniqueFileNames);
     }
 
-    public static ShardBackupId empty() {
-        return new ShardBackupId();
+    public static ShardBackupMetadata empty() {
+        return new ShardBackupMetadata();
     }
 
-    public static ShardBackupId from(BackupRepository repository, URI dir, String filename) throws IOException {
+    public static ShardBackupMetadata from(BackupRepository repository, URI dir, String filename) throws IOException {
         if (!repository.exists(repository.resolve(dir, filename))) {
             return null;
         }
@@ -84,7 +84,7 @@ public class ShardBackupId {
     }
 
     /**
-     * Storing ShardBackupId at {@code folderURI} with name {@code filename}.
+     * Storing ShardBackupMetadata at {@code folderURI} with name {@code filename}.
      * If a file already existed there, overwrite it.
      */
     public void store(BackupRepository repository, URI folderURI, String filename) throws IOException {
@@ -117,10 +117,10 @@ public class ShardBackupId {
         Utils.writeJson(map, os, false);
     }
 
-    private static ShardBackupId from(InputStream is) {
+    private static ShardBackupMetadata from(InputStream is) {
         @SuppressWarnings({"unchecked"})
         Map<String, Object> map = (Map<String, Object>) Utils.fromJSON(is);
-        ShardBackupId shardBackupId = new ShardBackupId();
+        ShardBackupMetadata shardBackupMetadata = new ShardBackupMetadata();
         for (String uniqueFileName : map.keySet()) {
             @SuppressWarnings({"unchecked"})
             Map<String, Object> fileMap = (Map<String, Object>) map.get(uniqueFileName);
@@ -128,10 +128,10 @@ public class ShardBackupId {
             String fileName = (String) fileMap.get("fileName");
             long checksum = (long) fileMap.get("checksum");
             long size = (long) fileMap.get("size");
-            shardBackupId.addBackedFile(new BackedFile(uniqueFileName, fileName, new Checksum(checksum, size)));
+            shardBackupMetadata.addBackedFile(new BackedFile(uniqueFileName, fileName, new Checksum(checksum, size)));
         }
 
-        return shardBackupId;
+        return shardBackupMetadata;
     }
 
     public static class BackedFile {

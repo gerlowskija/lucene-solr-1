@@ -27,7 +27,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.BackupIdStats;
 import org.apache.solr.core.backup.BackupProperties;
-import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
 
@@ -141,9 +141,9 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                 Pair<BackupId, String> pair = new Pair<>(backupId.get(), shardBackupIdFile);
                 shardBackupIdDeletes.add(pair);
             } else {
-                ShardBackupId shardBackupId = ShardBackupId.from(repository, shardBackupIdDir, shardBackupIdFile);
-                if (shardBackupId != null)
-                    referencedIndexFiles.addAll(shardBackupId.listUniqueFileNames());
+                ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupIdDir, shardBackupIdFile);
+                if (shardBackupMetadata != null)
+                    referencedIndexFiles.addAll(shardBackupMetadata.listUniqueFileNames());
             }
         }
 
@@ -152,15 +152,15 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         List<String> unusedFiles = new ArrayList<>();
         for (Pair<BackupId, String> entry : shardBackupIdDeletes) {
             BackupId backupId = entry.first();
-            ShardBackupId shardBackupId = ShardBackupId.from(repository, shardBackupIdDir, entry.second());
-            if (shardBackupId == null)
+            ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupIdDir, entry.second());
+            if (shardBackupMetadata == null)
                 continue;
 
             backupIdToCollectionBackupPoint
                     .putIfAbsent(backupId, new BackupIdStats());
-            backupIdToCollectionBackupPoint.get(backupId).add(shardBackupId);
+            backupIdToCollectionBackupPoint.get(backupId).add(shardBackupMetadata);
 
-            for (String uniqueIndexFile : shardBackupId.listUniqueFileNames()) {
+            for (String uniqueIndexFile : shardBackupMetadata.listUniqueFileNames()) {
                 if (!referencedIndexFiles.contains(uniqueIndexFile)) {
                     unusedFiles.add(uniqueIndexFile);
                 }
@@ -315,11 +315,11 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                     Node shardBackupIdNode = getShardBackupIdNode(shardBackupIdFile);
                     addEdge(backupIdNode, shardBackupIdNode);
 
-                    ShardBackupId shardBackupId = ShardBackupId.from(repository, backupPath, shardBackupIdFile);
-                    if (shardBackupId == null)
+                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath, shardBackupIdFile);
+                    if (shardBackupMetadata == null)
                         continue;
 
-                    for (String indexFile : shardBackupId.listUniqueFileNames()) {
+                    for (String indexFile : shardBackupMetadata.listUniqueFileNames()) {
                         Node indexFileNode = getIndexFileNode(indexFile);
                         addEdge(indexFileNode, shardBackupIdNode);
                     }
@@ -328,7 +328,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         }
     }
 
-    //ShardBackupId, BackupId
+    //ShardBackupMetadata, BackupId
     static class Node {
         List<Node> neighbors;
         boolean delete = false;

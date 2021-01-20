@@ -18,7 +18,7 @@
 package org.apache.solr.core.backup;
 
 /**
- * Aggregate stats from multiple {@link ShardBackupId}
+ * Aggregate stats from multiple {@link ShardBackupMetadata}
  */
 public class BackupIdStats {
     private int numFiles = 0;
@@ -27,9 +27,9 @@ public class BackupIdStats {
     public BackupIdStats() {
     }
 
-    public void add(ShardBackupId shardBackupId) {
-        numFiles += shardBackupId.numFiles();
-        totalSize += shardBackupId.totalSize();
+    public void add(ShardBackupMetadata shardBackupMetadata) {
+        numFiles += shardBackupMetadata.numFiles();
+        totalSize += shardBackupMetadata.totalSize();
     }
 
     public int getNumFiles() {
