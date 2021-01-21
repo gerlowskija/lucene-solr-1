@@ -143,7 +143,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
             if (backupIdsDeletes.contains(backupId)) {
                 shardBackupIdFileDeletes.add(shardBackupId);
             } else {
-                ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupMetadataDir, shardBackupId.getIdAsString());
+                ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupMetadataDir, shardBackupId);
                 if (shardBackupMetadata != null)
                     referencedIndexFiles.addAll(shardBackupMetadata.listUniqueFileNames());
             }
@@ -154,7 +154,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         List<String> unusedFiles = new ArrayList<>();
         for (ShardBackupId shardBackupIdToDelete : shardBackupIdFileDeletes) {
             BackupId backupId = shardBackupIdToDelete.getContainingBackupId();
-            ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupMetadataDir, shardBackupIdToDelete.getIdAsString());
+            ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, shardBackupMetadataDir, shardBackupIdToDelete);
             if (shardBackupMetadata == null)
                 continue;
 
@@ -313,11 +313,12 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                         BackupFilePaths.getBackupPropsName(backupId));
 
                 Node backupIdNode = getBackupIdNode(BackupFilePaths.getBackupPropsName(backupId));
-                for (String shardBackupMetadataFile : backupProps.getAllShardBackupMetadataFiles()) {
-                    Node shardBackupMetadataNode = getShardBackupIdNode(shardBackupMetadataFile);
+                for (String shardBackupMetadataFilename : backupProps.getAllShardBackupMetadataFiles()) {
+                    Node shardBackupMetadataNode = getShardBackupIdNode(shardBackupMetadataFilename);
                     addEdge(backupIdNode, shardBackupMetadataNode);
 
-                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath, shardBackupMetadataFile);
+                    ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath,
+                            ShardBackupId.from(shardBackupMetadataFilename));
                     if (shardBackupMetadata == null)
                         continue;
 

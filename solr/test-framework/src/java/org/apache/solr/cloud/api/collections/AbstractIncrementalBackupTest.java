@@ -427,7 +427,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
                     .readFromLatest(repository, backupURI)
                     .flatMap(bp -> bp.getShardBackupIdFor(shardName))
                     .get();
-            return ShardBackupMetadata.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupMetadataDir(), shardBackupId.getIdAsString());
+            return ShardBackupMetadata.from(repository, new BackupFilePaths(repository, backupURI).getShardBackupMetadataDir(), shardBackupId);
         }
 
         private void assertIndexInputEquals(IndexInput in1, IndexInput in2) throws IOException {

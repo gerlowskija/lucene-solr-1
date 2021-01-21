@@ -73,12 +73,13 @@ public class ShardBackupMetadata {
         return new ShardBackupMetadata();
     }
 
-    public static ShardBackupMetadata from(BackupRepository repository, URI dir, String filename) throws IOException {
-        if (!repository.exists(repository.resolve(dir, filename))) {
+    public static ShardBackupMetadata from(BackupRepository repository, URI dir, ShardBackupId shardBackupId) throws IOException {
+        final String shardBackupMetadataFilename = shardBackupId.getIdAsString();
+        if (!repository.exists(repository.resolve(dir, shardBackupMetadataFilename))) {
             return null;
         }
 
-        try (IndexInput is = repository.openInput(dir, filename, IOContext.DEFAULT)) {
+        try (IndexInput is = repository.openInput(dir, shardBackupMetadataFilename, IOContext.DEFAULT)) {
             return from(new PropertiesInputStream(is));
         }
     }
