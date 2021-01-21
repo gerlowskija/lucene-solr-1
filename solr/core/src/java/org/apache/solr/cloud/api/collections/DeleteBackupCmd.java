@@ -133,11 +133,10 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         List<ShardBackupId> shardBackupIdFileDeletes = new ArrayList<>();
 
 
-        // JEGERLOW TODO: When I add in the json suffix, shore up the file/id distinction that's blurred slightly here.
-        List<ShardBackupId> shardBackupMetadataFiles = Arrays.stream(repository.listAllOrEmpty(shardBackupMetadataDir))
-                .map(sbi -> ShardBackupId.from(sbi))
+        List<ShardBackupId> shardBackupIds = Arrays.stream(repository.listAllOrEmpty(shardBackupMetadataDir))
+                .map(sbi -> ShardBackupId.fromShardMetadataFilename(sbi))
                 .collect(Collectors.toList());
-        for (ShardBackupId shardBackupId : shardBackupMetadataFiles) {
+        for (ShardBackupId shardBackupId : shardBackupIds) {
             final BackupId backupId = shardBackupId.getContainingBackupId();
 
             if (backupIdsDeletes.contains(backupId)) {
@@ -318,7 +317,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                     addEdge(backupIdNode, shardBackupMetadataNode);
 
                     ShardBackupMetadata shardBackupMetadata = ShardBackupMetadata.from(repository, backupPath,
-                            ShardBackupId.from(shardBackupMetadataFilename));
+                            ShardBackupId.fromShardMetadataFilename(shardBackupMetadataFilename));
                     if (shardBackupMetadata == null)
                         continue;
 

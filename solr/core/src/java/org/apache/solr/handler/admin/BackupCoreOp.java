@@ -24,6 +24,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.handler.IncrementalShardBackup;
@@ -39,8 +40,8 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
     String cname = params.required().get(CoreAdminParams.CORE);
     String name = params.required().get(NAME);
     boolean incremental = params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
-    String backupMetadataFile = params.get(CoreAdminParams.SHARD_BACKUP_ID, null);
-    String prevBackupMetadataFile = params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
+    String shardBackupIdStr = params.get(CoreAdminParams.SHARD_BACKUP_ID, null);
+    String prevShardBackupIdStr = params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     // An optional parameter to describe the snapshot to be backed-up. If this
     // parameter is not supplied, the latest index commit is backed-up.
@@ -56,9 +57,11 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
       URI locationUri = repository.createURI(location);
       if (incremental) {
+        final ShardBackupId prevShardBackupId = prevShardBackupIdStr != null ? ShardBackupId.from(prevShardBackupIdStr) : null;
+        final ShardBackupId shardBackupId = shardBackupIdStr != null ? ShardBackupId.from(shardBackupIdStr) : null;
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
         IncrementalShardBackup incSnapShooter = new IncrementalShardBackup(repository, core, incBackupFiles,
-                prevBackupMetadataFile, backupMetadataFile);
+                prevShardBackupId, shardBackupId);
         @SuppressWarnings({"rawtypes"})
         NamedList rsp = incSnapShooter.backup();
         it.rsp.addResponse(rsp);

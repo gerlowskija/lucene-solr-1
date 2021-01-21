@@ -74,7 +74,7 @@ public class ShardBackupMetadata {
     }
 
     public static ShardBackupMetadata from(BackupRepository repository, URI dir, ShardBackupId shardBackupId) throws IOException {
-        final String shardBackupMetadataFilename = shardBackupId.getIdAsString();
+        final String shardBackupMetadataFilename = shardBackupId.getBackupMetadataFilename();
         if (!repository.exists(repository.resolve(dir, shardBackupMetadataFilename))) {
             return null;
         }
@@ -88,7 +88,8 @@ public class ShardBackupMetadata {
      * Storing ShardBackupMetadata at {@code folderURI} with name {@code filename}.
      * If a file already existed there, overwrite it.
      */
-    public void store(BackupRepository repository, URI folderURI, String filename) throws IOException {
+    public void store(BackupRepository repository, URI folderURI, ShardBackupId shardBackupId) throws IOException {
+        final String filename = shardBackupId.getBackupMetadataFilename();
         URI fileURI = repository.resolve(folderURI, filename);
         if (repository.exists(fileURI)) {
             repository.delete(folderURI, Collections.singleton(filename), true);

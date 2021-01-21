@@ -104,14 +104,14 @@ public class BackupProperties {
     public Optional<ShardBackupId> getShardBackupIdFor(String shardName) {
         String key = getKeyForShardBackupId(shardName);
         if (properties.containsKey(key)) {
-            return Optional.of(ShardBackupId.from(properties.getProperty(key)));
+            return Optional.of(ShardBackupId.fromShardMetadataFilename(properties.getProperty(key)));
         }
         return Optional.empty();
     }
 
     public ShardBackupId putAndGetShardBackupIdFor(String shardName, int backupId) {
         final ShardBackupId shardBackupId = new ShardBackupId(shardName, new BackupId(backupId));
-        properties.put(getKeyForShardBackupId(shardName), shardBackupId.getIdAsString());
+        properties.put(getKeyForShardBackupId(shardName), shardBackupId.getBackupMetadataFilename());
         return shardBackupId;
     }
 

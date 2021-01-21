@@ -71,7 +71,7 @@ public class BackupFilePaths {
     /**
      * Create all locations required to store an incremental backup.
      *
-     * @throws IOException
+     * @throws IOException for issues encountered using repository to create directories
      */
     public void createIncrementalBackupFolders() throws IOException {
         if (!repository.exists(backupLoc)) {

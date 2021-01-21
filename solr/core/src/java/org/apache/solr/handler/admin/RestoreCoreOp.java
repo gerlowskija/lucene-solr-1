@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.RestoreCore;
 
@@ -38,10 +39,10 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
     final SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
     String name = params.get(NAME);
-    String metafile = params.get(CoreAdminParams.SHARD_BACKUP_ID);
+    String shardBackupIdStr = params.get(CoreAdminParams.SHARD_BACKUP_ID);
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
 
-    if (metafile == null && name == null) {
+    if (shardBackupIdStr == null && name == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either backupName or metadata file is not specified");
     }
 
@@ -70,8 +71,9 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       RestoreCore restoreCore;
-      if (metafile != null) {
-        restoreCore = RestoreCore.createWithMetaFile(repository, core, locationUri, metafile);
+      if (shardBackupIdStr != null) {
+        final ShardBackupId shardBackupId = ShardBackupId.from(shardBackupIdStr);
+        restoreCore = RestoreCore.createWithMetaFile(repository, core, locationUri, shardBackupId);
       } else {
         restoreCore = RestoreCore.create(repository, core, locationUri, name);
       }

@@ -38,6 +38,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.Checksum;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
@@ -60,11 +61,11 @@ public class RestoreCore implements Callable<Boolean> {
     return new RestoreCore(core, repository);
   }
 
-  public static RestoreCore createWithMetaFile(BackupRepository repo, SolrCore core, URI location, String metaFile) throws IOException {
+  public static RestoreCore createWithMetaFile(BackupRepository repo, SolrCore core, URI location, ShardBackupId shardBackupId) throws IOException {
     BackupFilePaths incBackupFiles = new BackupFilePaths(repo, location);
     URI shardBackupMetadataDir = incBackupFiles.getShardBackupMetadataDir();
     ShardBackupIdRestoreRepository resolver = new ShardBackupIdRestoreRepository(location, incBackupFiles.getIndexDir(),
-            repo, ShardBackupMetadata.from(repo, shardBackupMetadataDir, metaFile));
+            repo, ShardBackupMetadata.from(repo, shardBackupMetadataDir, shardBackupId));
     return new RestoreCore(core, resolver);
   }
 

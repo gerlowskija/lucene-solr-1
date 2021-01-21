@@ -4,6 +4,7 @@ package org.apache.solr.core.backup;
  * Uniquely identifies a shard-backup
  */
 public class ShardBackupId {
+    private static final String FILENAME_SUFFIX = ".json";
     private final String shardName;
     private final BackupId containingBackupId;
 
@@ -20,9 +21,12 @@ public class ShardBackupId {
         return containingBackupId;
     }
 
-    //JEGERLOW TODO At the tail end of refactoring, see whether I can eliminate uses of this method
     public String getIdAsString() {
         return "md_" + shardName + "_" + containingBackupId.getId();
+    }
+
+    public String getBackupMetadataFilename() {
+        return getIdAsString() + FILENAME_SUFFIX;
     }
 
     public static ShardBackupId from(String idString) {
@@ -33,5 +37,13 @@ public class ShardBackupId {
 
         final BackupId containingBackupId = new BackupId(Integer.parseInt(idComponents[2]));
         return new ShardBackupId(idComponents[1], containingBackupId);
+    }
+
+    public static ShardBackupId fromShardMetadataFilename(String filenameString) {
+        if (! filenameString.endsWith(FILENAME_SUFFIX)) {
+            throw new IllegalArgumentException("'filenameString' arg [" + filenameString + "] does not appear to be a filename");
+        }
+        final String idString = filenameString.substring(0, filenameString.length() - FILENAME_SUFFIX.length());
+        return from(idString);
     }
 }
