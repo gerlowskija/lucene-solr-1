@@ -1178,8 +1178,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                   String.format(Locale.ROOT, "Exactly one of %s, %s, and %s parameters must be provided", MAX_NUM_BACKUP, BACKUP_PURGE_UNUSED, BACKUP_ID));
         }
 
-        return copy(req.getParams(), null, NAME,
-                COLLECTION_PROP, BACKUP_REPOSITORY,  BACKUP_LOCATION, BACKUP_ID, MAX_NUM_BACKUP, BACKUP_PURGE_UNUSED);
+        final Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, BACKUP_REPOSITORY,
+                BACKUP_LOCATION, BACKUP_ID, MAX_NUM_BACKUP, BACKUP_PURGE_UNUSED);
+        params.put(BACKUP_LOCATION, location);
+        if (repo != null) {
+          params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
+        }
+        return params;
       }
     }),
     @SuppressWarnings({"unchecked", "rawtypes"})
