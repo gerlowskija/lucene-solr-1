@@ -2734,7 +2734,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (keepLastNumberOfBackups != null)
         params.set(CoreAdminParams.MAX_NUM_BACKUP, keepLastNumberOfBackups);
       if (purge != null)
-        params.set(CoreAdminParams.PURGE_BACKUP, purge);
+        params.set(CoreAdminParams.BACKUP_PURGE_UNUSED, purge);
       return params;
     }
 

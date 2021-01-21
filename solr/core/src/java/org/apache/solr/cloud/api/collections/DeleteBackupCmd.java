@@ -22,7 +22,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.AggregateBackupStats;
@@ -43,7 +42,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -65,10 +63,10 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
         int backupId = message.getInt(CoreAdminParams.BACKUP_ID, -1);
         int lastNumBackupPointsToKeep = message.getInt(CoreAdminParams.MAX_NUM_BACKUP, -1);
-        boolean purge = message.getBool(CoreAdminParams.PURGE_BACKUP, false);
+        boolean purge = message.getBool(CoreAdminParams.BACKUP_PURGE_UNUSED, false);
         if (backupId == -1 && lastNumBackupPointsToKeep == -1 && !purge) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "%s, %s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP,
-                    CoreAdminParams.PURGE_BACKUP));
+                    CoreAdminParams.BACKUP_PURGE_UNUSED));
         }
         CoreContainer cc = ocmh.overseer.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(repo)) {

@@ -39,7 +39,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
     String cname = params.required().get(CoreAdminParams.CORE);
     String name = params.required().get(NAME);
-    boolean incremental = params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
+    boolean incremental = params.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
     String shardBackupIdStr = params.get(CoreAdminParams.SHARD_BACKUP_ID, null);
     String prevShardBackupIdStr = params.get(CoreAdminParams.PREV_SHARD_BACKUP_ID, null);
     String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);

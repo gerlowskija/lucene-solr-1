@@ -145,7 +145,7 @@ public abstract class CoreAdminParams
   /**
    * Purging/deleting all index files, shard-backup metadata files, backup property files that are unreachable, uncompleted or corrupted.
    */
-  public static final String PURGE_BACKUP = "purge";
+  public static final String BACKUP_PURGE_UNUSED = "purgeUnused";
 
   /**
    * A parameter to specify whether incremental backup is used

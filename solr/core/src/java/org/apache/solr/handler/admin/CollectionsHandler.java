@@ -144,7 +144,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.*;
-import static org.apache.solr.common.params.CoreAdminParams.PURGE_BACKUP;
+import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
@@ -1057,7 +1057,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
       }
 
-      boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
+      boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.
       final URI uri = repository.createURI(location);
@@ -1169,15 +1169,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
         }
 
-        if (req.getParams().get(MAX_NUM_BACKUP) == null &&
-                req.getParams().get(PURGE_BACKUP) == null &&
-                req.getParams().get(BACKUP_ID) == null) {
-          throw new SolrException(BAD_REQUEST, String.format(Locale.ROOT, "%s, %s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP,
-                  CoreAdminParams.PURGE_BACKUP));
+        int deletionModesProvided = 0;
+        if (req.getParams().get(MAX_NUM_BACKUP) != null) deletionModesProvided++;
+        if (req.getParams().get(BACKUP_PURGE_UNUSED) != null) deletionModesProvided++;
+        if (req.getParams().get(BACKUP_ID) != null) deletionModesProvided++;
+        if (deletionModesProvided != 1) {
+          throw new SolrException(BAD_REQUEST,
+                  String.format(Locale.ROOT, "Exactly one of %s, %s, and %s parameters must be provided", MAX_NUM_BACKUP, BACKUP_PURGE_UNUSED, BACKUP_ID));
         }
 
         return copy(req.getParams(), null, NAME,
-                COLLECTION_PROP, BACKUP_REPOSITORY,  BACKUP_LOCATION, BACKUP_ID, MAX_NUM_BACKUP, PURGE_BACKUP);
+                COLLECTION_PROP, BACKUP_REPOSITORY,  BACKUP_LOCATION, BACKUP_ID, MAX_NUM_BACKUP, BACKUP_PURGE_UNUSED);
       }
     }),
     @SuppressWarnings({"unchecked", "rawtypes"})
