@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.net.URI;
+import java.nio.file.Paths;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -56,7 +57,11 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
       }
 
       URI locationUri = repository.createURI(location);
+
       if (incremental) {
+        if ("file".equals(locationUri.getScheme())) {
+          core.getCoreContainer().assertPathAllowed(Paths.get(location));
+        }
         final ShardBackupId prevShardBackupId = prevShardBackupIdStr != null ? ShardBackupId.from(prevShardBackupIdStr) : null;
         final ShardBackupId shardBackupId = shardBackupIdStr != null ? ShardBackupId.from(shardBackupIdStr) : null;
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);
