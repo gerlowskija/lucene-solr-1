@@ -80,7 +80,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, false);
+    boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
     String configName = ocmh.zkStateReader.readConfigName(collectionName);
 
     BackupProperties backupProperties = BackupProperties.create(backupName, collectionName,
@@ -208,7 +208,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       String coreName = replica.getStr(CORE_NAME_PROP);
 
-      ModifiableSolrParams params = coreBackupParams(backupPath, repoName, slice, coreName);
+      ModifiableSolrParams params = coreBackupParams(backupPath, repoName, slice, coreName, true /* incremental backup */);
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, true);
       previousProps.flatMap(bp -> bp.getShardBackupIdFor(slice.getName()))
               .ifPresent(prevBackupPoint -> params.set(CoreAdminParams.PREV_SHARD_BACKUP_ID, prevBackupPoint.getIdAsString()));
@@ -258,13 +258,14 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     return aggRsp;
   }
 
-  private ModifiableSolrParams coreBackupParams(URI backupPath, String repoName, Slice slice, String coreName) {
+  private ModifiableSolrParams coreBackupParams(URI backupPath, String repoName, Slice slice, String coreName, boolean incremental) {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString());
     params.set(NAME, slice.getName());
     params.set(CoreAdminParams.BACKUP_REPOSITORY, repoName);
     params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString()); // note: index dir will be here then the "snapshot." + slice name
     params.set(CORE_NAME_PROP, coreName);
+    params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
     return params;
   }
 
@@ -319,7 +320,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       String coreName = replica.getStr(CORE_NAME_PROP);
 
-      ModifiableSolrParams params = coreBackupParams(backupPath, repoName, slice, coreName);
+      ModifiableSolrParams params = coreBackupParams(backupPath, repoName, slice, coreName, false /*non-incremental backup */);
       if (snapshotMeta.isPresent()) {
         params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
       }
