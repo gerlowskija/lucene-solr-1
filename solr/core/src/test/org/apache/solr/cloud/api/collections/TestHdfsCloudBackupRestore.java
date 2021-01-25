@@ -53,7 +53,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.core.backup.BackupManager.BACKUP_PROPS_FILE;
+import static org.apache.solr.core.backup.BackupManager.TRADITIONAL_BACKUP_PROPS_FILE;
 import static org.apache.solr.core.backup.BackupManager.CONFIG_STATE_DIR;
 import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 
@@ -208,7 +208,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
     URI configDirLoc = repo.resolve(baseLoc, backupName, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
     assertTrue(repo.exists(configDirLoc));
 
-    Collection<String> expected = Arrays.asList(BACKUP_PROPS_FILE, ZK_STATE_DIR);
+    Collection<String> expected = Arrays.asList(TRADITIONAL_BACKUP_PROPS_FILE, ZK_STATE_DIR);
     URI backupLoc = repo.resolve(baseLoc, backupName);
     String[] dirs = repo.listAll(backupLoc);
     for (String d : dirs) {

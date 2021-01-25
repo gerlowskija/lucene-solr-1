@@ -54,6 +54,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -506,7 +507,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       this.repository = this.container.newBackupRepository(repo);
 
       this.location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      this.backupPath = repository.resolve(location, backupName);
+      final URI backupNameUri = repository.resolve(location, backupName);
+      final String[] entries = repository.listAll(backupNameUri);
+      final boolean incremental = ! Arrays.stream(entries).anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
+      this.backupPath = (incremental) ?
+              repository.resolve(backupNameUri, entries[0]) : // incremental backups have an extra path component representing the backed up collection
+              backupNameUri;
       this.zkStateReader = ocmh.zkStateReader;
       this.backupManager = backupId == -1 ?
               BackupManager.forRestore(repository, zkStateReader, backupPath) :
@@ -527,6 +533,13 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       if (this.repository != null) {
         this.repository.close();
       }
+    }
+
+    private URI createBackupPath(BackupRepository repository, boolean incremental, URI baseLocation, String backupName, String collection) {
+      if (incremental) {
+        return repository.resolve(baseLocation, backupName);
+      }
+      return repository.resolve(baseLocation, backupName, collection);
     }
   }
 

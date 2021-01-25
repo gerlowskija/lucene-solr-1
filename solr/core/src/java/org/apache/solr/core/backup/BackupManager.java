@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class BackupManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String COLLECTION_PROPS_FILE = "collection_state.json";
-  public static final String BACKUP_PROPS_FILE = "backup.properties";
+  public static final String TRADITIONAL_BACKUP_PROPS_FILE = "backup.properties";
   public static final String ZK_STATE_DIR = "zk_backup";
   public static final String CONFIG_STATE_DIR = "configs";
 
@@ -98,12 +98,10 @@ public class BackupManager {
 
   public static BackupManager forBackup(BackupRepository repository,
                                         ZkStateReader stateReader,
-                                        URI backupLoc,
-                                        String backupName) {
+                                        URI backupPath) {
     Objects.requireNonNull(repository);
     Objects.requireNonNull(stateReader);
 
-    URI backupPath = repository.resolve(backupLoc, backupName);
     return new BackupManager(repository, backupPath, stateReader, null, BackupId.traditionalBackup());
   }
 
@@ -138,10 +136,10 @@ public class BackupManager {
       BackupId backupPropFile = opFileGen.get();
       return new BackupManager(repository, backupPath, stateReader, BackupFilePaths.getBackupPropsName(backupPropFile),
               backupPropFile);
-    } else if (repository.exists(repository.resolve(backupPath, BACKUP_PROPS_FILE))){
-      return new BackupManager(repository, backupPath, stateReader, BACKUP_PROPS_FILE, null);
+    } else if (repository.exists(repository.resolve(backupPath, TRADITIONAL_BACKUP_PROPS_FILE))){
+      return new BackupManager(repository, backupPath, stateReader, TRADITIONAL_BACKUP_PROPS_FILE, null);
     } else {
-      throw new IllegalStateException("No " + BACKUP_PROPS_FILE + " was found, the backup does not exist or not complete");
+      throw new IllegalStateException("No " + TRADITIONAL_BACKUP_PROPS_FILE + " was found, the backup does not exist or not complete");
     }
   }
 
@@ -164,7 +162,7 @@ public class BackupManager {
    */
   public BackupProperties readBackupProperties() throws IOException {
     if (existingPropsFile == null) {
-      throw new IllegalStateException("No " + BACKUP_PROPS_FILE + " was found, the backup does not exist or not complete");
+      throw new IllegalStateException("No " + TRADITIONAL_BACKUP_PROPS_FILE + " was found, the backup does not exist or not complete");
     }
 
     return BackupProperties.readFrom(repository, backupPath, existingPropsFile);

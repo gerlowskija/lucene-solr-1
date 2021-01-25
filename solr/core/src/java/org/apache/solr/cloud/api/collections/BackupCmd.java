@@ -25,6 +25,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
@@ -91,24 +92,11 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       // Backup location
       URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      URI backupPath = repository.resolve(location, backupName);
+      final URI backupPath = createAndValidateBackupPath(repository, incremental, location, backupName, collectionName);
 
-      //Validating if the directory already exists.
-      if (!repository.exists(backupPath)) {
-        // Create a directory to store backup details.
-        repository.createDirectory(backupPath);
-      } else if(!incremental) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupPath);
-      }
-
-      BackupManager backupMgr;
-      if (incremental) {
-        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPath);
-        incBackupFiles.createIncrementalBackupFolders();
-        backupMgr = BackupManager.forIncrementalBackup(repository, ocmh.zkStateReader, backupPath);
-      } else {
-        backupMgr = BackupManager.forBackup(repository, ocmh.zkStateReader, location, backupName);
-      }
+      BackupManager backupMgr = (incremental) ?
+              BackupManager.forIncrementalBackup(repository, ocmh.zkStateReader, backupPath) :
+              BackupManager.forBackup(repository, ocmh.zkStateReader, backupPath);
 
       String strategy = message.getStr(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
       switch (strategy) {
@@ -155,6 +143,38 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.deleteBackup(repository, backupPath, maxNumBackup, results);
       }
     }
+  }
+
+  private URI createAndValidateBackupPath(BackupRepository repository, boolean incremental, URI location, String backupName, String collection) throws IOException{
+    final URI backupNamePath = repository.resolve(location, backupName);
+
+    if ( (!incremental) && repository.exists(backupNamePath)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupNamePath);
+    }
+
+    if (! repository.exists(backupNamePath)) {
+      repository.createDirectory(backupNamePath);
+    } else if (incremental){
+      final String[] directoryContents = repository.listAll(backupNamePath);
+      if (directoryContents.length == 1 && !directoryContents[0].equals(collection)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "The backup [" + backupName + "] at location [" + location +
+                "] cannot be used to back up [" + collection + "], as it already holds a different collection [" +
+                directoryContents[0] + "]");
+      }
+    }
+
+    if (! incremental) {
+      return backupNamePath;
+    }
+
+    // Incremental backups have an additional directory named after the collection that needs created
+    final URI backupPathWithCollection = repository.resolve(backupNamePath, collection);
+    if (! repository.exists(backupPathWithCollection)) {
+      repository.createDirectory(backupPathWithCollection);
+    }
+    BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPathWithCollection);
+    incBackupFiles.createIncrementalBackupFolders();
+    return backupPathWithCollection;
   }
 
   private Replica selectReplicaWithSnapshot(CollectionSnapshotMetaData snapshotMeta, Slice slice) {

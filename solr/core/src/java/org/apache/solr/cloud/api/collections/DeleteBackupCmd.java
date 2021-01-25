@@ -25,14 +25,18 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.AggregateBackupStats;
+import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.BackupFilePaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +54,8 @@ import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;
 import static org.apache.solr.core.backup.BackupManager.START_TIME_PROP;
 
 public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
     private final OverseerCollectionMessageHandler ocmh;
 
     DeleteBackupCmd(OverseerCollectionMessageHandler ocmh) {
@@ -71,7 +77,12 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         CoreContainer cc = ocmh.overseer.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(repo)) {
             URI location = repository.createURI(backupLocation);
-            URI backupPath = repository.resolve(location, backupName);
+            final URI backupPath = BackupFilePaths.buildExistingBackupLocationURI(repository, location, backupName);
+            if (repository.exists(repository.resolve(backupPath, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup name [" + backupName + "] at " +
+                        "location [" + location + "] holds a non-incremental (legacy) backup, but " +
+                        "backup-deletion is only supported on incremental backups");
+            }
 
             if (purge) {
                 purge(repository, backupPath, results);

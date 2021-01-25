@@ -20,6 +20,7 @@ package org.apache.solr.core.backup;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
 
 import static org.apache.solr.core.backup.BackupId.TRADITIONAL_BACKUP;
@@ -41,6 +43,14 @@ public class BackupFilePaths {
     private BackupRepository repository;
     private URI backupLoc;
 
+    /**
+     * Create a BackupFilePaths object.
+     *
+     * @param repository the repository; used primarily to resolve URIs.
+     * @param backupLoc the root location for a named backup.  For traditional backups this is expected to take the form
+     *                  baseLocation/backupName.  For incremental backups this is expected to be of the form
+     *                  baseLocation/backupName/collectionName.
+     */
     public BackupFilePaths(BackupRepository repository, URI backupLoc) {
         this.repository = repository;
         this.backupLoc = backupLoc;
@@ -111,7 +121,7 @@ public class BackupFilePaths {
      */
     public static String getBackupPropsName(BackupId id) {
         if (id.id == TRADITIONAL_BACKUP) {
-            return BackupManager.BACKUP_PROPS_FILE;
+            return BackupManager.TRADITIONAL_BACKUP_PROPS_FILE;
         }
         return getBackupPropsName(id.id);
     }
@@ -144,6 +154,47 @@ public class BackupFilePaths {
      */
     public static Optional<BackupId> findMostRecentBackupIdFromFileListing(String[] listFiles) {
         return findAllBackupIdsFromFileListing(listFiles).stream().max(Comparator.comparingInt(o -> o.id));
+    }
+
+    /**
+     * Builds the URI for the backup location given the user-provided 'location' and backup 'name'.
+     *
+     * @param repository the backup repository, used to list files and resolve URI's.
+     * @param location a URI representing the repository location holding each backup name
+     * @param backupName the specific backup name to create a URI for
+     */
+    public static URI buildExistingBackupLocationURI(BackupRepository repository, URI location, String backupName) throws IOException {
+        final URI backupNameUri = repository.resolve(location, backupName);
+        final String[] entries = repository.listAll(backupNameUri);
+        final boolean incremental = ! Arrays.stream(entries).anyMatch(entry -> entry.equals(BackupManager.TRADITIONAL_BACKUP_PROPS_FILE));
+        if (incremental) {
+            // Incremental backups have an additional URI path component representing the collection that was backed up.
+            // This collection directory is the path assumed by other backup code.
+            if (entries.length != 1) {
+                throw new IllegalStateException("Incremental backup URI [" + backupNameUri + "] expected to hold a single directory");
+            }
+            final String collectionName = entries[0];
+            return repository.resolve(backupNameUri, entries[0]);
+        } else {
+            return backupNameUri;
+        }
+    }
+
+    /**
+     * Builds the URI for a new backup location given the user-provided 'location', backup 'name', and 'collection'.
+     *
+     * @param incremental whether the location is to hold incremental backups
+     * @param repository the backup repository, used to resolve URI's only.
+     * @param location the user-provided backup location value
+     * @param backupName the user-provided 'name' for the backup
+     * @param collectionName the user-provided 'collection' being backed up.
+     */
+    public static URI buildNewBackupLocationURI(boolean incremental, BackupRepository repository, URI location,
+                                                String backupName, String collectionName) {
+        // TODO JEGERLOW Is htis needed anywhere?  Right now the logic lives in BackupCmd because of the requirement
+        //  that we create the directories as necessary.  Should I move the dir-ensuring code here?
+        // See BackupCmd.createAndValidateBackupPaths
+        return null;
     }
 
     private static String getBackupPropsName(int id) {
